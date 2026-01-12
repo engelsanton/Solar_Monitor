@@ -1,0 +1,35 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.pio/build/
+
+# VSCode
+.vscode/
+
+# OS/Editor
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Python virtualenv
+venv/
+
+# Backup/Temp
+*.bak
+*.tmp
+
+# PlatformIO auto-generated
+*.elf
+*.bin
+*.hex
+*.map
+*.dmp
+*.pyc
+
+# Misc
+__pycache__/
+
+# Ignore lib_deps (optional, if you want to keep local libraries out of git)
+lib_deps/
