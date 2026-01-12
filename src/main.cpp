@@ -1,18 +1,18 @@
 
 #include <Arduino.h>
+
 #include <Wire.h>
 #include <Adafruit_INA219.h>
 #include "main.h"
+#include "config.h"
 
 
 Adafruit_INA219 ina219;
 
 
-// Transistor an GPIO4
-const int TRANSISTOR_PIN = 4;
+
 bool transistorState = false;
 unsigned long lastToggle = 0;
-const unsigned long toggleInterval = 5000; // 5 Sekunden
 
 void setup() {
   Serial.begin(115200);
@@ -20,7 +20,7 @@ void setup() {
   Serial.println("INA219 Test auf ESP32");
 
   // I2C Pins für ESP32 setzen
-  Wire.begin(21, 22); // SDA=21, SCL=22
+  Wire.begin(I2C_SDA, I2C_SCL); // Pins aus config.h
 
   if (!ina219.begin()) {
     Serial.println("Fehler: INA219 nicht gefunden!");
@@ -49,7 +49,7 @@ void loop() {
 
   // Transistor an GPIO4 alle 5 Sekunden toggeln
   unsigned long now = millis();
-  if (now - lastToggle >= toggleInterval) {
+  if (now - lastToggle >= TOGGLE_INTERVAL) {
     transistorState = !transistorState;
     digitalWrite(TRANSISTOR_PIN, transistorState ? HIGH : LOW);
     Serial.print("Transistor GPIO4 ist jetzt: ");
