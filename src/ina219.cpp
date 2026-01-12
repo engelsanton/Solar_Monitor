@@ -15,6 +15,7 @@ void ina219Init() {
     Serial.println("INA219 initialisiert.");
 }
 
+
 void ina219PrintValues() {
     float busVoltage_V = ina219.getBusVoltage_V();
     float current_mA = ina219.getCurrent_mA();
@@ -23,4 +24,12 @@ void ina219PrintValues() {
     Serial.print(" V\tStrom: ");
     Serial.print(current_mA, 3);
     Serial.println(" mA");
+}
+
+float ina219_getBusVoltage() {
+    return ina219.getBusVoltage_V();
+}
+
+float ina219_getCurrent() {
+    return ina219.getCurrent_mA();
 }

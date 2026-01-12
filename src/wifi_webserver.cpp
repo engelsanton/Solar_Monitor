@@ -38,10 +38,15 @@ void handleNotFound() {
     server.send(404, "text/plain", "404: Not Found");
 }
 
+
 void wifiWebserverInit() {
     if (!LittleFS.begin()) {
-        Serial.println("LittleFS konnte nicht gestartet werden!");
-        return;
+        Serial.println("LittleFS mount fehlgeschlagen, versuche Format...");
+        LittleFS.format();
+        if (!LittleFS.begin()) {
+            Serial.println("LittleFS konnte nicht gestartet werden!");
+            return;
+        }
     }
 
     WiFi.softAP(WIFI_SSID, WIFI_PASS);

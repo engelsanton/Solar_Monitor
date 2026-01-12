@@ -6,10 +6,13 @@
 
 #include "transistor.h"
 #include "ina219.h"
+
 #include "wifi_webserver.h"
+#include "oled.h"
 
 
 bool transistorState = false;
+
 
 
 void setup() {
@@ -20,13 +23,23 @@ void setup() {
   ina219Init();
   transistorInit();
   wifiWebserverInit();
+  oledInit();
 }
 
 
 
 
+
+
 void loop() {
-  ina219PrintValues();
+  float v = ina219_getBusVoltage();
+  float i = ina219_getCurrent();
+  Serial.print("Busspannung: ");
+  Serial.print(v, 3);
+  Serial.print(" V\tStrom: ");
+  Serial.print(i, 3);
+  Serial.println(" mA");
+  oledShowValues(v, i);
   wifiWebserverLoop();
   delay(1000);
 }
