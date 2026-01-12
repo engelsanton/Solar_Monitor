@@ -3,6 +3,7 @@
 #include <WebServer.h>
 #include <LittleFS.h>
 #include "config.h"
+#include "ina219.h"
 
 // WLAN-Konfiguration
 #define WIFI_SSID "ESP32_SolarMonitor"
@@ -21,6 +22,14 @@ void handleRoot() {
     server.send(200, "text/html", html);
 }
 
+
+bool sp1State = false;
+void handleSP1() {
+    sp1State = !sp1State;
+    digitalWrite(TRANSISTOR_PIN, sp1State ? HIGH : LOW);
+    server.send(200, "text/plain", sp1State ? "on" : "off");
+}
+
 void handleOn() {
     digitalWrite(TRANSISTOR_PIN, HIGH);
     server.sendHeader("Location", "/", true);
@@ -36,6 +45,27 @@ void handleOff() {
 
 void handleNotFound() {
     server.send(404, "text/plain", "404: Not Found");
+}
+
+void handleApiData() {
+    float voltage = ina219_getBusVoltage();
+    float current = ina219_getCurrent();
+    
+    // Negative Werte auf 0 setzen
+    if (voltage < 0) voltage = 0;
+    if (current < 0) current = 0;
+    
+    // Leistung in mW (Spannung in V * Strom in mA = mW)
+    float power = voltage * current;
+    
+    String json = "{";
+    json += "\"voltage\":" + String(voltage, 2) + ",";
+    json += "\"current\":" + String(current, 2) + ",";
+    json += "\"solar_total\":" + String(power, 2) + ",";
+    json += "\"battery_soc\":50";
+    json += "}";
+    
+    server.send(200, "application/json", json);
 }
 
 
@@ -58,6 +88,8 @@ void wifiWebserverInit() {
     digitalWrite(TRANSISTOR_PIN, LOW);
 
     server.on("/", HTTP_GET, handleRoot);
+    server.on("/api/data", HTTP_GET, handleApiData);
+    server.on("/sp1", HTTP_POST, handleSP1);
     server.on("/on", HTTP_POST, handleOn);
     server.on("/off", HTTP_POST, handleOff);
     server.onNotFound(handleNotFound);

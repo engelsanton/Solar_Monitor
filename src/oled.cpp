@@ -21,14 +21,17 @@ void oledInit() {
     display.display();
 }
 
+
 void oledShowValues(float voltage, float current) {
     display.clearDisplay();
     display.setCursor(0,0);
     display.setTextSize(2);
     display.print("U: ");
+    if (voltage < 0) voltage = 0;
     display.print(voltage, 2);
     display.println(" V");
     display.print("I: ");
+    if (current < 0) current = 0;
     display.print(current, 2);
     display.println(" mA");
     display.display();

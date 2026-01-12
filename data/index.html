@@ -2,11 +2,462 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>Transistor Steuerung</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Solar Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e27;
+            color: #e0e0e0;
+            overflow-x: hidden;
+            padding-bottom: 70px;
+        }
+        .app-header {
+            background: linear-gradient(135deg, #1a1f3a 0%, #0f1229 100%);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #00d9ff33;
+            box-shadow: 0 2px 10px rgba(0,217,255,0.1);
+        }
+        .app-header h1 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #00d9ff;
+            text-shadow: 0 0 10px rgba(0,217,255,0.5);
+        }
+        .power-display {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #00ff88;
+            margin: 10px 0;
+            text-shadow: 0 0 20px rgba(0,255,136,0.6);
+        }
+        .tab-content {
+            display: none;
+            padding: 20px;
+            min-height: calc(100vh - 200px);
+        }
+        .tab-content.active { display: block; }
+        .grid-2x2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .card {
+            background: linear-gradient(145deg, #1a1f3a, #0f1229);
+            border: 1px solid #00d9ff33;
+            border-radius: 16px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .card:active { transform: scale(0.95); }
+        .card.active {
+            background: linear-gradient(145deg, #00d9ff22, #00ff8822);
+            border-color: #00ff88;
+            box-shadow: 0 0 20px rgba(0,255,136,0.4);
+        }
+        .card-title {
+            font-size: 0.9em;
+            color: #a0a0a0;
+            margin-bottom: 8px;
+        }
+        .card-value {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #00ff88;
+        }
+        .battery-bar {
+            width: 100%;
+            height: 40px;
+            background: #1a1f3a;
+            border: 2px solid #00d9ff;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            position: relative;
+        }
+        .battery-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff88, #00d9ff);
+            transition: width 0.5s;
+            box-shadow: 0 0 15px rgba(0,255,136,0.6);
+        }
+        .battery-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-weight: bold;
+            color: #fff;
+            text-shadow: 0 0 5px #000;
+        }
+        .slider-container {
+            margin: 20px 0;
+        }
+        .slider {
+            width: 100%;
+            height: 8px;
+            background: #1a1f3a;
+            border-radius: 4px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #00ff88;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,255,136,0.8);
+        }
+        canvas {
+            width: 100%;
+            height: 200px;
+            background: #0f1229;
+            border: 1px solid #00d9ff33;
+            border-radius: 12px;
+        }
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: #0f1229;
+            border-top: 1px solid #00d9ff33;
+            display: flex;
+            justify-content: space-around;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.5);
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #666;
+            font-size: 0.75em;
+            cursor: pointer;
+            padding: 5px 15px;
+            transition: all 0.3s;
+        }
+        .nav-item.active {
+            color: #00ff88;
+        }
+        .nav-icon {
+            font-size: 1.8em;
+            margin-bottom: 4px;
+        }
+    </style>
 </head>
 <body>
-    <h1>Transistor Steuerung</h1>
-    <form action="/on" method="post"><button type="submit">Transistor EIN</button></form>
-    <form action="/off" method="post"><button type="submit">Transistor AUS</button></form>
+    <div class="app-header">
+        <h1>☀️ Solar Dashboard</h1>
+        <div class="power-display" id="totalPower">0 mW</div>
+    </div>
+
+    <!-- Tab: Solar -->
+    <div class="tab-content active" id="tab-solar">
+        <h2 style="color: #00d9ff; margin-bottom: 15px;">Solar Panels</h2>
+        <div class="grid-2x2">
+            <div class="card" id="panel1" onclick="togglePanel(1)">
+                <div class="card-title">Panel East</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="panel2" onclick="togglePanel(2)">
+                <div class="card-title">Panel South</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="panel3" onclick="togglePanel(3)">
+                <div class="card-title">Panel West</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="panel4" onclick="togglePanel(4)">
+                <div class="card-title">Panel 4</div>
+                <div class="card-value">OFF</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Battery -->
+    <div class="tab-content" id="tab-battery">
+        <h2 style="color: #00d9ff; margin-bottom: 15px;">Battery Modules</h2>
+        <div class="battery-bar">
+            <div class="battery-fill" id="batteryFill" style="width: 0%"></div>
+            <div class="battery-text" id="batteryText">0%</div>
+        </div>
+        <div class="grid-2x2">
+            <div class="card" id="bat1" onclick="toggleBattery(1)">
+                <div class="card-title">Module 1</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="bat2" onclick="toggleBattery(2)">
+                <div class="card-title">Module 2</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="bat3" onclick="toggleBattery(3)">
+                <div class="card-title">Module 3</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="bat4" onclick="toggleBattery(4)">
+                <div class="card-title">Module 4</div>
+                <div class="card-value">OFF</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab: Load -->
+    <div class="tab-content" id="tab-load">
+        <h2 style="color: #00d9ff; margin-bottom: 15px;">Consumers</h2>
+        <div class="grid-2x2">
+            <div class="card" id="load1" onclick="toggleLoad(1)">
+                <div style="font-size: 2em;">🧺</div>
+                <div class="card-title">Washing Machine</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="load2" onclick="toggleLoad(2)">
+                <div style="font-size: 2em;">💡</div>
+                <div class="card-title">Lighting</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="load3" onclick="toggleLoad(3)">
+                <div style="font-size: 2em;">📺</div>
+                <div class="card-title">TV</div>
+                <div class="card-value">OFF</div>
+            </div>
+            <div class="card" id="load4" onclick="toggleLoad(4)">
+                <div style="font-size: 2em;">🍽️</div>
+                <div class="card-title">Dishwasher</div>
+                <div class="card-value">OFF</div>
+            </div>
+        </div>
+        <div class="slider-container">
+            <label style="color: #a0a0a0; display: block; margin-bottom: 10px;">Base Load: <span id="baseloadValue">0</span> mW</label>
+            <input type="range" min="0" max="500" value="0" class="slider" id="baseload" oninput="updateBaseload(this.value)">
+        </div>
+    </div>
+
+    <!-- Tab: Monitor -->
+    <div class="tab-content" id="tab-monitor">
+        <h2 style="color: #00d9ff; margin-bottom: 15px;">Live Monitor</h2>
+        <div style="margin-bottom: 30px;">
+            <h3 style="color: #a0a0a0; font-size: 0.9em; margin-bottom: 10px;">Voltage (V)</h3>
+            <canvas id="chartVoltage"></canvas>
+        </div>
+        <div>
+            <h3 style="color: #a0a0a0; font-size: 0.9em; margin-bottom: 10px;">Current (mA)</h3>
+            <canvas id="chartCurrent"></canvas>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div class="bottom-nav">
+        <div class="nav-item active" onclick="switchTab('solar')">
+            <div class="nav-icon">☀️</div>
+            <div>Solar</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('battery')">
+            <div class="nav-icon">🔋</div>
+            <div>Batterie</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('load')">
+            <div class="nav-icon">⚡</div>
+            <div>Load</div>
+        </div>
+        <div class="nav-item" onclick="switchTab('monitor')">
+            <div class="nav-icon">📊</div>
+            <div>Monitor</div>
+        </div>
+    </div>
+
+    <script>
+        // State Management
+        let state = {
+            panels: [false, false, false, false],
+            batteries: [false, false, false, false],
+            loads: [false, false, false, false],
+            baseload: 0,
+            solarTotal: 0,
+            batterySoC: 0
+        };
+
+        let chartDataVoltage = [];
+        let chartDataCurrent = [];
+        const maxDataPoints = 60;
+
+        // Tab Switching
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            document.getElementById('tab-' + tab).classList.add('active');
+            document.querySelector(`.nav-item[onclick*="${tab}"]`).classList.add('active');
+        }
+
+        // Toggle Functions
+        function togglePanel(id) {
+            state.panels[id-1] = !state.panels[id-1];
+            const card = document.getElementById('panel' + id);
+            const val = card.querySelector('.card-value');
+            if (state.panels[id-1]) {
+                card.classList.add('active');
+                val.textContent = 'ON';
+                fetch('/sp' + id, {method: 'POST'});
+            } else {
+                card.classList.remove('active');
+                val.textContent = 'OFF';
+                fetch('/sp' + id, {method: 'POST'});
+            }
+        }
+
+        function toggleBattery(id) {
+            state.batteries[id-1] = !state.batteries[id-1];
+            const card = document.getElementById('bat' + id);
+            const val = card.querySelector('.card-value');
+            if (state.batteries[id-1]) {
+                card.classList.add('active');
+                val.textContent = 'ON';
+                fetch('/bs' + id, {method: 'POST'});
+            } else {
+                card.classList.remove('active');
+                val.textContent = 'OFF';
+                fetch('/bs' + id, {method: 'POST'});
+            }
+        }
+
+        function toggleLoad(id) {
+            state.loads[id-1] = !state.loads[id-1];
+            const card = document.getElementById('load' + id);
+            const val = card.querySelector('.card-value');
+            if (state.loads[id-1]) {
+                card.classList.add('active');
+                val.textContent = 'ON';
+            } else {
+                card.classList.remove('active');
+                val.textContent = 'OFF';
+            }
+        }
+
+        function updateBaseload(value) {
+            state.baseload = value;
+            document.getElementById('baseloadValue').textContent = value;
+        }
+
+        // Fetch real data from ESP32
+        function fetchData() {
+            fetch('/api/data')
+                .then(response => response.json())
+                .then(data => {
+                    data.load_active = state.loads;
+                    updateUI(data);
+                })
+                .catch(err => {
+                    console.error('Error fetching data:', err);
+                });
+        }
+        
+        // Poll data every 500ms
+        setInterval(fetchData, 500);
+        fetchData(); // Initial fetch
+
+        function updateUI(data) {
+            state.solarTotal = data.solar_total;
+            state.batterySoC = data.battery_soc;
+            
+            document.getElementById('totalPower').textContent = data.solar_total.toFixed(2) + ' mW';
+            document.getElementById('batteryFill').style.width = data.battery_soc + '%';
+            document.getElementById('batteryText').textContent = data.battery_soc + '%';
+            
+            chartDataVoltage.push(parseFloat(data.voltage));
+            chartDataCurrent.push(parseFloat(data.current));
+            if (chartDataVoltage.length > maxDataPoints) chartDataVoltage.shift();
+            if (chartDataCurrent.length > maxDataPoints) chartDataCurrent.shift();
+            drawCharts();
+        }
+
+        // Canvas Chart Drawing
+        const canvasVoltage = document.getElementById('chartVoltage');
+        const ctxVoltage = canvasVoltage.getContext('2d');
+        const canvasCurrent = document.getElementById('chartCurrent');
+        const ctxCurrent = canvasCurrent.getContext('2d');
+        
+        function drawChart(canvas, ctx, data, color, unit) {
+            const w = canvas.width = canvas.offsetWidth;
+            const h = canvas.height = canvas.offsetHeight;
+            const padding = 40;
+            const chartW = w - padding;
+            const chartH = h - padding;
+            
+            ctx.clearRect(0, 0, w, h);
+            
+            if (data.length < 2) return;
+            
+            const max = Math.max(...data, 10) * 1.1; // Dynamisch mit 10% Puffer
+            const stepX = chartW / (maxDataPoints - 1);
+            const stepY = chartH / max;
+            
+            // Grid
+            ctx.strokeStyle = '#1a1f3a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = (chartH / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(chartW, y);
+                ctx.stroke();
+                
+                // Y-Achsen Labels
+                ctx.fillStyle = '#666';
+                ctx.font = '10px sans-serif';
+                ctx.textAlign = 'right';
+                const val = (max - (max / 4) * i).toFixed(1);
+                ctx.fillText(val, w - 2, y + 3);
+            }
+            
+            // Achsenbeschriftungen
+            ctx.fillStyle = '#a0a0a0';
+            ctx.font = '11px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText('Time (60s)', chartW / 2, h - 5);
+            ctx.save();
+            ctx.translate(10, chartH / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText(unit, 0, 0);
+            ctx.restore();
+            
+            // Line Chart
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            data.forEach((val, i) => {
+                const x = i * stepX;
+                const y = chartH - (val * stepY);
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            
+            // Fill Area
+            ctx.lineTo(chartW, chartH);
+            ctx.lineTo(0, chartH);
+            ctx.closePath();
+            const gradient = ctx.createLinearGradient(0, 0, 0, chartH);
+            const colorRgb = color === '#00ff88' ? '0,255,136' : '0,217,255';
+            gradient.addColorStop(0, `rgba(${colorRgb},0.3)`);
+            gradient.addColorStop(1, `rgba(${colorRgb},0)`);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+        }
+        
+        function drawCharts() {
+            drawChart(canvasVoltage, ctxVoltage, chartDataVoltage, '#00ff88', 'Voltage (V)');
+            drawChart(canvasCurrent, ctxCurrent, chartDataCurrent, '#00d9ff', 'Current (mA)');
+        }
+
+        // Initialize
+        drawCharts();
+    </script>
 </body>
 </html>
