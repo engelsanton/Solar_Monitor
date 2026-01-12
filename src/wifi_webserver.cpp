@@ -1,5 +1,7 @@
+
 #include <WiFi.h>
 #include <WebServer.h>
+#include <LittleFS.h>
 #include "config.h"
 
 // WLAN-Konfiguration
@@ -9,11 +11,13 @@
 WebServer server(80);
 
 void handleRoot() {
-    String html = "<html><head><title>Transistor Control</title></head><body>";
-    html += "<h1>Transistor Steuerung</h1>";
-    html += "<form action='/on' method='post'><button type='submit'>Transistor EIN</button></form>";
-    html += "<form action='/off' method='post'><button type='submit'>Transistor AUS</button></form>";
-    html += "</body></html>";
+    File file = LittleFS.open("/index.html", "r");
+    if (!file) {
+        server.send(500, "text/plain", "index.html nicht gefunden");
+        return;
+    }
+    String html = file.readString();
+    file.close();
     server.send(200, "text/html", html);
 }
 
@@ -35,6 +39,11 @@ void handleNotFound() {
 }
 
 void wifiWebserverInit() {
+    if (!LittleFS.begin()) {
+        Serial.println("LittleFS konnte nicht gestartet werden!");
+        return;
+    }
+
     WiFi.softAP(WIFI_SSID, WIFI_PASS);
     IPAddress myIP = WiFi.softAPIP();
     Serial.print("WLAN gestartet. IP: ");
