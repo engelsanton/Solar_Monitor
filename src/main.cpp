@@ -4,10 +4,14 @@
 #include "ina.h"
 #include "oled.h"
 #include "transistor.h"
+#include "wifi_manager.h"
+#include "web_server.h"
 
 INA ina;
 OLED oled;
 Transistor transistor;
+WiFiManager wifiManager("Solar_Monitor", "12345678");
+WebServerManager webServer(&transistor);
 
 bool oled_found = false;
 bool ina219_found = false;
@@ -77,9 +81,20 @@ void setup() {
   }
   
   delay(1000);
+  
+  // WiFi Access Point starten
+  wifiManager.begin();
+  
+  // Webserver starten
+  webServer.begin();
+  
+  Serial.println("System bereit!");
 }
 
 void loop() {
+  // Webserver Anfragen verarbeiten
+  webServer.handleClient();
+  
   // Transistoren aktualisieren
   transistor.update();
   
