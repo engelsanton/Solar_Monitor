@@ -1,290 +1,821 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solar Monitor - Transistor Steuerung</title>
+    <title>Solar Energy Monitor</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            overflow: hidden;
+            height: 100vh;
             display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
+            flex-direction: column;
         }
-        
-        .container {
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
-            max-width: 500px;
-            width: 100%;
-        }
-        
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 28px;
-        }
-        
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 30px;
-            font-size: 14px;
-        }
-        
-        .transistor-group {
-            margin-bottom: 20px;
-            padding: 20px;
-            background: #f8f9fa;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-        }
-        
-        .transistor-group:hover {
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
-        }
-        
-        .transistor-header {
+
+        /* Header */
+        #header {
+            background-color: #1e1e1e;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            border-bottom: 2px solid #2a2a2a;
+            min-height: 60px;
         }
-        
-        .transistor-name {
-            font-size: 18px;
-            font-weight: bold;
-            color: #333;
+
+        #header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
         }
-        
-        .transistor-status {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+
+        #simulateBtn {
+            padding: 8px 20px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.9rem;
             transition: all 0.3s ease;
         }
-        
-        .status-on {
-            background: #4CAF50;
+
+        #simulateBtn.simulate {
+            background-color: #4caf50;
             color: white;
         }
-        
-        .status-off {
-            background: #f44336;
+
+        #simulateBtn.stop {
+            background-color: #f44336;
             color: white;
         }
-        
-        .button-group {
-            display: flex;
-            gap: 10px;
+
+        #simulateBtn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
         }
-        
-        button {
+
+        /* Main Content */
+        #content {
             flex: 1;
-            padding: 12px 20px;
-            border: none;
+            overflow-y: auto;
+            padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Cards */
+        .card {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #e0e0e0;
+        }
+
+        /* Button Groups */
+        .button-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-btn {
+            padding: 12px;
+            border: 2px solid #4caf50;
+            background-color: transparent;
+            color: #4caf50;
             border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
+            font-weight: 600;
             cursor: pointer;
             transition: all 0.3s ease;
-            text-transform: uppercase;
+            font-size: 0.95rem;
         }
-        
-        button:active {
-            transform: scale(0.95);
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
         }
-        
-        .btn-on {
-            background: #4CAF50;
+
+        .toggle-btn.active {
+            background-color: #4caf50;
             color: white;
         }
-        
-        .btn-on:hover {
-            background: #45a049;
+
+        /* Load Buttons */
+        .load-btn {
+            border-color: #2196f3;
+            color: #2196f3;
         }
-        
-        .btn-off {
-            background: #f44336;
+
+        .load-btn:hover {
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        .load-btn.active {
+            background-color: #2196f3;
             color: white;
         }
-        
-        .btn-off:hover {
-            background: #da190b;
+
+        /* Display Values */
+        .display-value {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
+            padding: 25px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 20px;
+            border: 2px solid #2a2a2a;
         }
-        
-        .refresh-btn {
+
+        .display-value .label {
+            font-size: 0.9rem;
+            color: #999;
+            margin-bottom: 8px;
+        }
+
+        .display-value .value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: #4caf50;
+        }
+
+        /* Charts */
+        .chart-container {
+            background-color: #2a2a2a;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .chart-label {
+            font-size: 0.85rem;
+            color: #999;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        canvas {
+            width: 100%;
+            height: 180px;
+            display: block;
+            border-radius: 6px;
+        }
+
+        /* Settings */
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .setting-row:last-child {
+            border-bottom: none;
+        }
+
+        .setting-label {
+            font-size: 1rem;
+            color: #e0e0e0;
+        }
+
+        /* Toggle Switch */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 26px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #555;
+            transition: 0.3s;
+            border-radius: 26px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4caf50;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(24px);
+        }
+
+        /* Input Field */
+        .input-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input[type="number"] {
+            background-color: #2a2a2a;
+            border: 2px solid #3a3a3a;
+            border-radius: 6px;
+            padding: 8px 12px;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            width: 100px;
+        }
+
+        input[type="number"]:focus {
+            outline: none;
+            border-color: #4caf50;
+        }
+
+        /* Action Button */
+        .action-btn {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
             width: 100%;
             margin-top: 20px;
-            background: #667eea;
-            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
         }
-        
-        .refresh-btn:hover {
-            background: #5568d3;
+
+        .action-btn:hover {
+            background-color: #1976d2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
         }
-        
-        .message {
-            margin-top: 20px;
-            padding: 15px;
-            border-radius: 8px;
+
+        /* Bottom Navigation */
+        #navigation {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #1e1e1e;
+            display: flex;
+            justify-content: space-around;
+            border-top: 2px solid #2a2a2a;
+            padding: 10px 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
             text-align: center;
-            font-weight: bold;
-            display: none;
+            padding: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #999;
+            font-weight: 600;
+            font-size: 0.85rem;
+            border-top: 3px solid transparent;
         }
-        
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            display: block;
+
+        .nav-item:hover {
+            color: #e0e0e0;
         }
-        
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
+
+        .nav-item.active {
+            color: #4caf50;
+            border-top-color: #4caf50;
+        }
+
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            #content {
+                max-width: 800px;
+                margin: 0 auto;
+            }
+
+            #header h1 {
+                font-size: 1.5rem;
+            }
+
+            .button-group {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            canvas {
+                height: 200px;
+            }
+        }
+
+        @media (max-width: 400px) {
+            #header h1 {
+                font-size: 1rem;
+            }
+
+            #simulateBtn {
+                padding: 6px 15px;
+                font-size: 0.85rem;
+            }
+
+            .nav-item {
+                font-size: 0.75rem;
+                padding: 8px 5px;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>⚡ Solar Monitor</h1>
-        <p class="subtitle">Transistor Fernsteuerung</p>
-        
-        <div class="transistor-group">
-            <div class="transistor-header">
-                <span class="transistor-name">Transistor 1</span>
-                <span class="transistor-status status-off" id="status-1">AUS</span>
-            </div>
-            <div class="button-group">
-                <button class="btn-on" onclick="setTransistor(1, 1)">AN</button>
-                <button class="btn-off" onclick="setTransistor(1, 0)">AUS</button>
-            </div>
-        </div>
-        
-        <div class="transistor-group">
-            <div class="transistor-header">
-                <span class="transistor-name">Transistor 2</span>
-                <span class="transistor-status status-off" id="status-2">AUS</span>
-            </div>
-            <div class="button-group">
-                <button class="btn-on" onclick="setTransistor(2, 1)">AN</button>
-                <button class="btn-off" onclick="setTransistor(2, 0)">AUS</button>
-            </div>
-        </div>
-        
-        <div class="transistor-group">
-            <div class="transistor-header">
-                <span class="transistor-name">Transistor 3</span>
-                <span class="transistor-status status-off" id="status-3">AUS</span>
-            </div>
-            <div class="button-group">
-                <button class="btn-on" onclick="setTransistor(3, 1)">AN</button>
-                <button class="btn-off" onclick="setTransistor(3, 0)">AUS</button>
-            </div>
-        </div>
-        
-        <div class="transistor-group">
-            <div class="transistor-header">
-                <span class="transistor-name">Transistor 4</span>
-                <span class="transistor-status status-off" id="status-4">AUS</span>
-            </div>
-            <div class="button-group">
-                <button class="btn-on" onclick="setTransistor(4, 1)">AN</button>
-                <button class="btn-off" onclick="setTransistor(4, 0)">AUS</button>
-            </div>
-        </div>
-        
-        <button class="refresh-btn" onclick="updateStatus()">🔄 Status aktualisieren</button>
-        
-        <div class="message" id="message"></div>
+    <!-- Header -->
+    <div id="header">
+        <h1>Solar Monitor</h1>
+        <button id="simulateBtn" class="simulate">Simulate</button>
     </div>
-    
+
+    <!-- Main Content -->
+    <div id="content">
+        <!-- Modules Page -->
+        <div id="modulesPage" class="page active">
+            <div class="card">
+                <div class="card-title">Solar Panels</div>
+                <div class="button-group">
+                    <button class="toggle-btn" data-panel="1">Panel 1</button>
+                    <button class="toggle-btn" data-panel="2">Panel 2</button>
+                    <button class="toggle-btn" data-panel="3">Panel 3</button>
+                    <button class="toggle-btn" data-panel="4">Panel 4</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="chart-container">
+                    <div class="chart-label">Current (mA)</div>
+                    <canvas id="currentChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-label">Voltage (mV)</div>
+                    <canvas id="voltageChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-label">Power (mW)</div>
+                    <canvas id="powerChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Battery Page -->
+        <div id="batteryPage" class="page">
+            <div class="card">
+                <div class="card-title">Battery Cells</div>
+                <div class="button-group">
+                    <button class="toggle-btn" data-cell="1">Cell 1</button>
+                    <button class="toggle-btn" data-cell="2">Cell 2</button>
+                    <button class="toggle-btn" data-cell="3">Cell 3</button>
+                    <button class="toggle-btn" data-cell="4">Cell 4</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="display-value">
+                    <div class="label">Battery Level</div>
+                    <div class="value" id="batteryLevel">0%</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="chart-container">
+                    <div class="chart-label">Battery Level History (%)</div>
+                    <canvas id="batteryChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Load Page -->
+        <div id="loadPage" class="page">
+            <div class="card">
+                <div class="card-title">Load Controls</div>
+                <div class="button-group">
+                    <button class="load-btn toggle-btn" data-load="light" data-watts="10">Light</button>
+                    <button class="load-btn toggle-btn" data-load="fridge" data-watts="150">Fridge</button>
+                    <button class="load-btn toggle-btn" data-load="ac" data-watts="2000">AC</button>
+                    <button class="load-btn toggle-btn" data-load="washing" data-watts="500">Washing Machine</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="display-value">
+                    <div class="label">Current Load</div>
+                    <div class="value" id="currentLoad">0 W</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="chart-container">
+                    <div class="chart-label">Load History (W)</div>
+                    <canvas id="loadChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Page -->
+        <div id="settingsPage" class="page">
+            <div class="card">
+                <div class="card-title">Settings</div>
+                
+                <div class="setting-row">
+                    <span class="setting-label">Show Real Data</span>
+                    <label class="switch">
+                        <input type="checkbox" id="realDataToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <span class="setting-label">Simulation Duration (day in sec)</span>
+                    <div class="input-group">
+                        <input type="number" id="simDuration" value="86400" min="1" max="999999">
+                    </div>
+                </div>
+
+                <button class="action-btn" id="systemCheckBtn">System Check</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <div id="navigation">
+        <div class="nav-item active" data-page="modules">Modules</div>
+        <div class="nav-item" data-page="battery">Battery</div>
+        <div class="nav-item" data-page="load">Load</div>
+        <div class="nav-item" data-page="settings">Settings</div>
+    </div>
+
     <script>
-        function showMessage(text, isError = false) {
-            const msg = document.getElementById('message');
-            msg.textContent = text;
-            msg.className = 'message ' + (isError ? 'error' : 'success');
-            setTimeout(() => {
-                msg.style.display = 'none';
-            }, 3000);
+        // Global State
+        const state = {
+            isSimulating: false,
+            currentPage: 'modules',
+            panels: [false, false, false, false],
+            cells: [false, false, false, false],
+            loads: {
+                light: false,
+                fridge: false,
+                ac: false,
+                washing: false
+            },
+            data: {
+                current: [],
+                voltage: [],
+                power: [],
+                battery: [],
+                load: []
+            },
+            maxDataPoints: 60,
+            simulationInterval: null
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeUI();
+            initializeCharts();
+            setupEventListeners();
+        });
+
+        function initializeUI() {
+            // Set initial page
+            showPage('modules');
         }
-        
-        function updateStatusDisplay(transistor, state) {
-            const statusElement = document.getElementById('status-' + transistor);
-            if (state === 1) {
-                statusElement.textContent = 'AN';
-                statusElement.className = 'transistor-status status-on';
-            } else {
-                statusElement.textContent = 'AUS';
-                statusElement.className = 'transistor-status status-off';
+
+        function initializeCharts() {
+            // Initialize data arrays with zeros
+            for (let i = 0; i < state.maxDataPoints; i++) {
+                state.data.current.push(0);
+                state.data.voltage.push(0);
+                state.data.power.push(0);
+                state.data.battery.push(75);
+                state.data.load.push(0);
             }
+            drawAllCharts();
         }
-        
-        async function setTransistor(transistor, state) {
-            try {
-                const formData = new URLSearchParams();
-                formData.append('transistor', transistor);
-                formData.append('state', state);
-                
-                const response = await fetch('/set', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded',
-                    },
-                    body: formData
+
+        function setupEventListeners() {
+            // Simulate Button
+            document.getElementById('simulateBtn').addEventListener('click', toggleSimulation);
+
+            // Navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.addEventListener('click', function() {
+                    showPage(this.dataset.page);
                 });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    updateStatusDisplay(transistor, state);
-                    showMessage(`Transistor ${transistor} ${state ? 'eingeschaltet' : 'ausgeschaltet'}`);
-                } else {
-                    showMessage('Fehler beim Setzen des Transistors', true);
+            });
+
+            // Panel Buttons
+            document.querySelectorAll('[data-panel]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const panelIndex = parseInt(this.dataset.panel) - 1;
+                    state.panels[panelIndex] = !state.panels[panelIndex];
+                    this.classList.toggle('active');
+                });
+            });
+
+            // Cell Buttons
+            document.querySelectorAll('[data-cell]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const cellIndex = parseInt(this.dataset.cell) - 1;
+                    state.cells[cellIndex] = !state.cells[cellIndex];
+                    this.classList.toggle('active');
+                });
+            });
+
+            // Load Buttons
+            document.querySelectorAll('[data-load]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const loadType = this.dataset.load;
+                    state.loads[loadType] = !state.loads[loadType];
+                    this.classList.toggle('active');
+                    updateLoadDisplay();
+                });
+            });
+
+            // System Check Button
+            document.getElementById('systemCheckBtn').addEventListener('click', function() {
+                alert('System OK');
+            });
+        }
+
+        function showPage(pageName) {
+            // Update state
+            state.currentPage = pageName;
+
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+
+            // Show selected page
+            document.getElementById(pageName + 'Page').classList.add('active');
+
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === pageName) {
+                    item.classList.add('active');
                 }
-            } catch (error) {
-                console.error('Error:', error);
-                showMessage('Verbindungsfehler', true);
+            });
+
+            // Show/hide simulate button based on page
+            const simulateBtn = document.getElementById('simulateBtn');
+            if (pageName === 'settings') {
+                simulateBtn.style.visibility = 'hidden';
+            } else {
+                simulateBtn.style.visibility = 'visible';
             }
         }
-        
-        async function updateStatus() {
-            try {
-                const response = await fetch('/status');
-                const data = await response.json();
-                
-                updateStatusDisplay(1, data.t1);
-                updateStatusDisplay(2, data.t2);
-                updateStatusDisplay(3, data.t3);
-                updateStatusDisplay(4, data.t4);
-                
-                showMessage('Status aktualisiert');
-            } catch (error) {
-                console.error('Error:', error);
-                showMessage('Fehler beim Abrufen des Status', true);
+
+        function toggleSimulation() {
+            const btn = document.getElementById('simulateBtn');
+            state.isSimulating = !state.isSimulating;
+
+            if (state.isSimulating) {
+                btn.textContent = 'Stop';
+                btn.className = 'stop';
+                startSimulation();
+            } else {
+                btn.textContent = 'Simulate';
+                btn.className = 'simulate';
+                stopSimulation();
             }
         }
-        
-        // Status beim Laden der Seite abrufen
-        window.addEventListener('load', updateStatus);
-        
-        // Auto-Refresh alle 5 Sekunden
-        setInterval(updateStatus, 5000);
+
+        function startSimulation() {
+            state.simulationInterval = setInterval(function() {
+                updateSimulationData();
+                drawAllCharts();
+                updateDisplayValues();
+            }, 1000);
+        }
+
+        function stopSimulation() {
+            if (state.simulationInterval) {
+                clearInterval(state.simulationInterval);
+                state.simulationInterval = null;
+            }
+        }
+
+        function updateSimulationData() {
+            // Count active panels
+            const activePanels = state.panels.filter(p => p).length;
+
+            // Simulate solar panel data with realistic variations (cloud effects)
+            const cloudFactor = 0.7 + Math.random() * 0.3; // 70-100% efficiency
+            const baseCurrent = activePanels * 500; // 500mA per panel
+            const baseVoltage = activePanels * 3500; // 3500mV per panel
+
+            const current = baseCurrent * cloudFactor + (Math.random() - 0.5) * 100;
+            const voltage = baseVoltage + (Math.random() - 0.5) * 200;
+            const power = (current * voltage) / 1000; // Convert to mW
+
+            // Update data arrays (rolling window)
+            state.data.current.push(current);
+            state.data.voltage.push(voltage);
+            state.data.power.push(power);
+
+            if (state.data.current.length > state.maxDataPoints) {
+                state.data.current.shift();
+                state.data.voltage.shift();
+                state.data.power.shift();
+            }
+
+            // Battery simulation (slowly charging/discharging)
+            const activeCells = state.cells.filter(c => c).length;
+            const currentBattery = state.data.battery[state.data.battery.length - 1];
+            let batteryChange = 0;
+
+            if (activePanels > 0 && activeCells > 0) {
+                batteryChange = (Math.random() * 0.5); // Charging
+            } else if (activeCells > 0) {
+                batteryChange = -(Math.random() * 0.3); // Discharging
+            }
+
+            const newBattery = Math.max(0, Math.min(100, currentBattery + batteryChange));
+            state.data.battery.push(newBattery);
+
+            if (state.data.battery.length > state.maxDataPoints) {
+                state.data.battery.shift();
+            }
+
+            // Load calculation
+            let totalLoad = 0;
+            Object.keys(state.loads).forEach(loadType => {
+                if (state.loads[loadType]) {
+                    const btn = document.querySelector(`[data-load="${loadType}"]`);
+                    totalLoad += parseInt(btn.dataset.watts);
+                }
+            });
+
+            // Add some variation
+            totalLoad += (Math.random() - 0.5) * 20;
+
+            state.data.load.push(totalLoad);
+            if (state.data.load.length > state.maxDataPoints) {
+                state.data.load.shift();
+            }
+        }
+
+        function updateDisplayValues() {
+            // Battery Level
+            const batteryLevel = state.data.battery[state.data.battery.length - 1];
+            document.getElementById('batteryLevel').textContent = batteryLevel.toFixed(1) + '%';
+
+            // Current Load
+            updateLoadDisplay();
+        }
+
+        function updateLoadDisplay() {
+            let totalLoad = 0;
+            Object.keys(state.loads).forEach(loadType => {
+                if (state.loads[loadType]) {
+                    const btn = document.querySelector(`[data-load="${loadType}"]`);
+                    totalLoad += parseInt(btn.dataset.watts);
+                }
+            });
+
+            document.getElementById('currentLoad').textContent = totalLoad + ' W';
+        }
+
+        function drawAllCharts() {
+            drawChart('currentChart', state.data.current, '#ff9800', 'mA');
+            drawChart('voltageChart', state.data.voltage, '#2196f3', 'mV');
+            drawChart('powerChart', state.data.power, '#4caf50', 'mW');
+            drawChart('batteryChart', state.data.battery, '#9c27b0', '%');
+            drawChart('loadChart', state.data.load, '#f44336', 'W');
+        }
+
+        function drawChart(canvasId, dataArray, color, unit) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const rect = canvas.getBoundingClientRect();
+
+            // Set canvas size
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
+            ctx.scale(dpr, dpr);
+
+            const width = rect.width;
+            const height = rect.height;
+
+            // Clear canvas
+            ctx.fillStyle = '#2a2a2a';
+            ctx.fillRect(0, 0, width, height);
+
+            if (dataArray.length === 0) return;
+
+            // Find min and max for scaling
+            const maxValue = Math.max(...dataArray, 1);
+            const minValue = Math.min(...dataArray, 0);
+            const range = maxValue - minValue || 1;
+
+            // Add padding
+            const padding = {
+                top: 20,
+                right: 50,
+                bottom: 20,
+                left: 10
+            };
+
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+
+            // Draw grid lines
+            ctx.strokeStyle = '#3a3a3a';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 4; i++) {
+                const y = padding.top + (chartHeight / 4) * i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+
+            // Draw data line
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+
+            dataArray.forEach((value, index) => {
+                const x = padding.left + (chartWidth / (state.maxDataPoints - 1)) * index;
+                const normalizedValue = (value - minValue) / range;
+                const y = padding.top + chartHeight - (normalizedValue * chartHeight);
+
+                if (index === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+
+            ctx.stroke();
+
+            // Draw current value label
+            const currentValue = dataArray[dataArray.length - 1];
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'right';
+            ctx.fillText(currentValue.toFixed(1) + ' ' + unit, width - padding.right + 45, padding.top + 5);
+
+            // Draw max value label
+            ctx.fillText(maxValue.toFixed(0), width - padding.right + 45, padding.top + chartHeight);
+        }
+
+        // Handle window resize
+        window.addEventListener('resize', function() {
+            drawAllCharts();
+        });
     </script>
 </body>
 </html>
