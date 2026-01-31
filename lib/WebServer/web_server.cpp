@@ -88,6 +88,8 @@ void WebServerManager::handleSetTransistor() {
     
     String response = "{\"success\":true,\"transistor\":" + String(transistorNum) + 
                      ",\"state\":" + String(state) + "}";
+    
+    server.sendHeader("Connection", "close");
     server.send(200, "application/json", response);
     
     Serial.print("Transistor ");
@@ -105,10 +107,12 @@ void WebServerManager::handleGetStatus() {
     json += "\"t4\":" + String(transistor->getState4());
     json += "}";
     
+    server.sendHeader("Connection", "close");
     server.send(200, "application/json", json);
 }
 
 void WebServerManager::handleNotFound() {
+    server.sendHeader("Connection", "close");
     server.send(404, "text/plain", "404: Not Found");
 }
 
@@ -117,6 +121,7 @@ void WebServerManager::handleSimulation() {
     
     if (!server.hasArg("action")) {
         Serial.println("[DEBUG] handleSimulation() - Missing action parameter");
+        server.sendHeader("Connection", "close");
         server.send(400, "application/json", "{\"error\":\"Missing action parameter\"}");
         return;
     }
@@ -128,20 +133,31 @@ void WebServerManager::handleSimulation() {
         if (server.hasArg("duration")) {
             duration = server.arg("duration").toInt();
         }
-        simulation->start(duration);
+        
+        bool simulateSun = false; // default
+        if (server.hasArg("simulateSun")) {
+            simulateSun = server.arg("simulateSun").toInt() == 1;
+        }
+        
+        simulation->start(duration, simulateSun);
+        server.sendHeader("Connection", "close");
         server.send(200, "application/json", "{\"success\":true,\"action\":\"start\"}");
     } 
     else if (action == "stop") {
         simulation->stop();
+        server.sendHeader("Connection", "close");
         server.send(200, "application/json", "{\"success\":true,\"action\":\"stop\"}");
     }
     else {
+        server.sendHeader("Connection", "close");
         server.send(400, "application/json", "{\"error\":\"Invalid action\"}");
     }
 }
 
 void WebServerManager::handleSimulationData() {
     String json = simulation->getDataAsJson();
+    server.sendHeader("Connection", "close");
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     server.send(200, "application/json", json);
 }
 
@@ -150,6 +166,7 @@ void WebServerManager::handleSetPanel() {
     
     if (!server.hasArg("panel") || !server.hasArg("state")) {
         Serial.println("[DEBUG] handleSetPanel() - Missing parameters");
+        server.sendHeader("Connection", "close");
         server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
         return;
     }
@@ -165,11 +182,13 @@ void WebServerManager::handleSetPanel() {
     
     String response = "{\"success\":true,\"panel\":" + String(panel) + 
                      ",\"state\":" + String(state ? "true" : "false") + "}";
+    server.sendHeader("Connection", "close");
     server.send(200, "application/json", response);
 }
 
 void WebServerManager::handleSetCell() {
     if (!server.hasArg("cell") || !server.hasArg("state")) {
+        server.sendHeader("Connection", "close");
         server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
         return;
     }
@@ -181,11 +200,13 @@ void WebServerManager::handleSetCell() {
     
     String response = "{\"success\":true,\"cell\":" + String(cell) + 
                      ",\"state\":" + String(state ? "true" : "false") + "}";
+    server.sendHeader("Connection", "close");
     server.send(200, "application/json", response);
 }
 
 void WebServerManager::handleSetLoad() {
     if (!server.hasArg("load") || !server.hasArg("state")) {
+        server.sendHeader("Connection", "close");
         server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
         return;
     }
@@ -197,6 +218,7 @@ void WebServerManager::handleSetLoad() {
     
     String response = "{\"success\":true,\"load\":\"" + load + 
                      "\",\"state\":" + String(state ? "true" : "false") + "}";
+    server.sendHeader("Connection", "close");
     server.send(200, "application/json", response);
 }
 
@@ -223,6 +245,8 @@ void WebServerManager::handleRealData() {
     json += "\"power\":" + String(powerMW, 2);
     json += "}";
     
+    server.sendHeader("Connection", "close");
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     server.send(200, "application/json", json);
     Serial.println("[DEBUG] handleRealData() - Data sent to client");
 }

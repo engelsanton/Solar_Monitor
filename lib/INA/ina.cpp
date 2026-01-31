@@ -20,20 +20,24 @@ bool INA::isFound() {
 
 float INA::getBusVoltage() {
     if (!found) return 0.0;
-    return ina219.getBusVoltage_V();
+    float voltage = ina219.getBusVoltage_V();
+    return voltage < 0.0 ? 0.0 : voltage;  // Ignoriere negative Werte
 }
 
 float INA::getShuntVoltage() {
     if (!found) return 0.0;
-    return ina219.getShuntVoltage_mV();
+    float voltage = ina219.getShuntVoltage_mV();
+    return voltage < 0.0 ? 0.0 : voltage;  // Ignoriere negative Werte
 }
 
 float INA::getCurrent() {
     if (!found) return 0.0;
-    return ina219.getCurrent_mA();
+    float current = ina219.getCurrent_mA();
+    return current < 0.0 ? 0.0 : current;  // Ignoriere negative Werte
 }
 
 float INA::getPower() {
     if (!found) return 0.0;
-    return ina219.getPower_mW();
+    float power = ina219.getPower_mW();
+    return power < 0.0 ? 0.0 : power;  // Ignoriere negative Werte
 }

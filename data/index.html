@@ -168,8 +168,16 @@
             margin-bottom: 20px;
         }
 
+        .button-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
         .toggle-btn {
-            padding: 12px;
+            width: 100%;
+            min-height: 60px;
+            padding: 8px 12px;
             border: 2px solid #4caf50;
             background-color: transparent;
             color: #4caf50;
@@ -178,6 +186,17 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-size: 0.95rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+        }
+
+        .button-spec {
+            font-size: 0.7rem;
+            color: #888;
+            font-weight: 400;
         }
 
         .toggle-btn:hover {
@@ -457,10 +476,30 @@
             <div class="card">
                 <div class="card-title">Solar Panels</div>
                 <div class="button-group">
-                    <button class="toggle-btn active" data-panel="1">Panel 1</button>
-                    <button class="toggle-btn" data-panel="2">Panel 2</button>
-                    <button class="toggle-btn" data-panel="3">Panel 3</button>
-                    <button class="toggle-btn" data-panel="4">Panel 4</button>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn active" data-panel="1">
+                            <span>Panel 1</span>
+                            <span class="button-spec">2.5 kWp</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn" data-panel="2">
+                            <span>Panel 2</span>
+                            <span class="button-spec">2.5 kWp</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn" data-panel="3">
+                            <span>Panel 3</span>
+                            <span class="button-spec">2.5 kWp</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn" data-panel="4">
+                            <span>Panel 4</span>
+                            <span class="button-spec">2.5 kWp</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -485,10 +524,30 @@
             <div class="card">
                 <div class="card-title">Battery Cells</div>
                 <div class="button-group">
-                    <button class="toggle-btn active" data-cell="1">Cell 1</button>
-                    <button class="toggle-btn" data-cell="2">Cell 2</button>
-                    <button class="toggle-btn" data-cell="3">Cell 3</button>
-                    <button class="toggle-btn" data-cell="4">Cell 4</button>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn active" data-cell="1">
+                            <span>Cell 1</span>
+                            <span class="button-spec">5 kWh</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn" data-cell="2">
+                            <span>Cell 2</span>
+                            <span class="button-spec">5 kWh</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn" data-cell="3">
+                            <span>Cell 3</span>
+                            <span class="button-spec">5 kWh</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="toggle-btn" data-cell="4">
+                            <span>Cell 4</span>
+                            <span class="button-spec">5 kWh</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -512,10 +571,54 @@
             <div class="card">
                 <div class="card-title">Load Controls</div>
                 <div class="button-group">
-                    <button class="load-btn toggle-btn" data-load="light" data-watts="10">Light</button>
-                    <button class="load-btn toggle-btn" data-load="fridge" data-watts="150">Fridge</button>
-                    <button class="load-btn toggle-btn" data-load="ac" data-watts="2000">AC</button>
-                    <button class="load-btn toggle-btn" data-load="washing" data-watts="500">Washing Machine</button>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="light" data-watts="10">
+                            <span>Light</span>
+                            <span class="button-spec">10 W</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="fridge" data-watts="150">
+                            <span>Fridge</span>
+                            <span class="button-spec">150 W</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="ac" data-watts="2000">
+                            <span>AC</span>
+                            <span class="button-spec">2000 W</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="washing" data-watts="500">
+                            <span>Washing</span>
+                            <span class="button-spec">500 W</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="wallbox" data-watts="11000">
+                            <span>Wallbox</span>
+                            <span class="button-spec">11 kW</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="heatpump" data-watts="3000">
+                            <span>Heat Pump</span>
+                            <span class="button-spec">3 kW</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="dishwasher" data-watts="2000">
+                            <span>Dishwasher</span>
+                            <span class="button-spec">2 kW</span>
+                        </button>
+                    </div>
+                    <div class="button-wrapper">
+                        <button class="load-btn toggle-btn" data-load="tv" data-watts="300">
+                            <span>TV</span>
+                            <span class="button-spec">300 W</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -543,6 +646,22 @@
                     <span class="setting-label">Show real data</span>
                     <label class="switch">
                         <input type="checkbox" id="showRealDataToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <span class="setting-label">Simulate Sun</span>
+                    <label class="switch">
+                        <input type="checkbox" id="simulateSunToggle">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="setting-row">
+                    <span class="setting-label">Auto Toggle Loads</span>
+                    <label class="switch">
+                        <input type="checkbox" id="autoToggleLoadsToggle">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -576,11 +695,18 @@
                 voltage: [],
                 power: [],
                 battery: [],
-                load: []
+                load: [],
+                timeLabels: [], // Uhrzeiten für X-Achse
+                hours: [] // Tatsächliche Stunden (0-24) für X-Position
             },
-            maxDataPoints: 30,
+            maxDataPoints: 48, // 24 Stunden × 2 = alle 30 Minuten ein Punkt
             updateInterval: null,
-            showRealData: false
+            showRealData: false,
+            simulationRunning: false,
+            lastDatapointMinute: -30, // Track letzte gespeicherte Minute
+            autoToggleLoads: false,
+            lastAutoToggleHour: -1, // Track letzte Stunde für Auto-Toggle
+            simulateSun: false // Simuliere Sonnenintensität
         };
 
         // Initialize
@@ -620,14 +746,14 @@
         }
 
         function initializeCharts() {
-            // Initialize empty arrays
-            for (let i = 0; i < state.maxDataPoints; i++) {
-                state.dataHistory.current.push(0);
-                state.dataHistory.voltage.push(0);
-                state.dataHistory.power.push(0);
-                state.dataHistory.battery.push(75);
-                state.dataHistory.load.push(0);
-            }
+            // Clear arrays (keine Initialisierung mit Nullen)
+            state.dataHistory.current = [];
+            state.dataHistory.voltage = [];
+            state.dataHistory.power = [];
+            state.dataHistory.battery = [];
+            state.dataHistory.load = [];
+            state.dataHistory.timeLabels = [];
+            state.dataHistory.hours = [];
             drawAllCharts();
         }
 
@@ -729,16 +855,26 @@
                 state.dataHistory.power = [];
                 state.dataHistory.battery = [];
                 state.dataHistory.load = [];
-                
-                // Reinitialize with zeros
-                for (let i = 0; i < state.maxDataPoints; i++) {
-                    state.dataHistory.current.push(0);
-                    state.dataHistory.voltage.push(0);
-                    state.dataHistory.power.push(0);
-                    state.dataHistory.battery.push(75);
-                    state.dataHistory.load.push(0);
-                }
+                state.dataHistory.timeLabels = [];
+                state.dataHistory.hours = [];
+                state.lastDatapointMinute = -30;
                 drawAllCharts();
+            });
+
+            // Auto Toggle Loads
+            document.getElementById('autoToggleLoadsToggle').addEventListener('change', function() {
+                state.autoToggleLoads = this.checked;
+                console.log('Auto toggle loads:', state.autoToggleLoads);
+                
+                if (state.autoToggleLoads) {
+                    state.lastAutoToggleHour = -1; // Reset
+                }
+            });
+
+            // Simulate Sun Toggle
+            document.getElementById('simulateSunToggle').addEventListener('change', function() {
+                state.simulateSun = this.checked;
+                console.log('Simulate sun:', state.simulateSun);
             });
         }
 
@@ -775,13 +911,23 @@
             const isCurrentlyRunning = btn.classList.contains('stop');
 
             if (!isCurrentlyRunning) {
-                // Start simulation
+                // Start simulation - Clear old data
+                state.dataHistory.current = [];
+                state.dataHistory.voltage = [];
+                state.dataHistory.power = [];
+                state.dataHistory.battery = [];
+                state.dataHistory.load = [];
+                state.dataHistory.timeLabels = [];
+                state.dataHistory.hours = [];
+                state.lastDatapointMinute = -30;
+                
                 const duration = parseInt(document.getElementById('simDuration').value) || 30;
+                const simulateSun = state.simulateSun ? 1 : 0;
                 
                 fetch('/simulation', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: `action=start&duration=${duration}`
+                    body: `action=start&duration=${duration}&simulateSun=${simulateSun}`
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -789,6 +935,7 @@
                         btn.textContent = 'Stop';
                         btn.className = 'stop';
                         disableButtons(true);
+                        state.simulationRunning = true;
                         startDataPolling();
                     }
                 });
@@ -805,6 +952,7 @@
                         btn.textContent = 'Simulate';
                         btn.className = 'simulate';
                         disableButtons(false);
+                        state.simulationRunning = false;
                         stopDataPolling();
                     }
                 });
@@ -836,6 +984,8 @@
                         state.dataHistory.power.push(data.power);
                         state.dataHistory.battery.push(0); // No battery in real data
                         state.dataHistory.load.push(0);    // No load in real data
+                        state.dataHistory.timeLabels.push('');
+                        state.dataHistory.hours.push(0); // Kein Zeit-Tracking bei real data
                         
                         // Keep array size limited
                         if (state.dataHistory.current.length > state.maxDataPoints) {
@@ -844,33 +994,57 @@
                             state.dataHistory.power.shift();
                             state.dataHistory.battery.shift();
                             state.dataHistory.load.shift();
+                            state.dataHistory.timeLabels.shift();
+                            state.dataHistory.hours.shift();
                         }
                         
                         // Update UI with real data (no time/celestial display)
                         updateDisplayValues(0, 0);
-                        drawAllCharts();
+                        if (state.simulationRunning) {
+                            drawAllCharts();
+                        }
                     } else {
-                        // Simulation data
-                        state.dataHistory.current.push(data.current);
-                        state.dataHistory.voltage.push(data.voltage);
-                        state.dataHistory.power.push(data.power);
-                        state.dataHistory.battery.push(data.batteryLevel);
-                        state.dataHistory.load.push(data.load);
-
-                        // Keep array size limited
-                        if (state.dataHistory.current.length > state.maxDataPoints) {
-                            state.dataHistory.current.shift();
-                            state.dataHistory.voltage.shift();
-                            state.dataHistory.power.shift();
-                            state.dataHistory.battery.shift();
-                            state.dataHistory.load.shift();
+                        // Simulation data - Nur alle 30 Minuten einen Datenpunkt speichern
+                        const currentMinute = data.hour * 60 + data.minute; // Minuten seit Mitternacht
+                        
+                        // Prüfe ob wir einen neuen 30-Minuten-Schritt erreicht haben
+                        if (currentMinute - state.lastDatapointMinute >= 30 || state.lastDatapointMinute === -30) {
+                            let displayHour = data.hour % 12;
+                            if (displayHour === 0) displayHour = 12;
+                            const ampm = data.hour < 12 ? 'AM' : 'PM';
+                            const timeLabel = `${displayHour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')} ${ampm}`;
+                            
+                            // Speichere tatsächliche Stunde mit Minuten als Dezimal (z.B. 13.5 für 13:30)
+                            const actualHour = data.hour + (data.minute / 60.0);
+                            
+                            state.dataHistory.current.push(data.current);
+                            state.dataHistory.voltage.push(data.voltage);
+                            state.dataHistory.power.push(data.power);
+                            state.dataHistory.battery.push(data.batteryLevel);
+                            state.dataHistory.load.push(data.load);
+                            state.dataHistory.timeLabels.push(timeLabel);
+                            state.dataHistory.hours.push(actualHour);
+                            
+                            state.lastDatapointMinute = currentMinute;
+                            
+                            // KEINE Begrenzung während Simulation - Punkte bleiben stehen!
                         }
 
                         // Update UI
                         updateTimeDisplay(data.hour, data.minute, data.isDaytime);
                         updateCelestialPosition(data.hour + data.minute / 60.0, data.isDaytime);
                         updateDisplayValues(data.batteryLevel, data.load);
-                        drawAllCharts();
+                        
+                        // Auto Toggle Loads basierend auf Uhrzeit
+                        if (state.autoToggleLoads && data.hour !== state.lastAutoToggleHour) {
+                            autoToggleLoadsByTime(data.hour);
+                            state.lastAutoToggleHour = data.hour;
+                        }
+                        
+                        // Nur Diagramme aktualisieren wenn Simulation läuft
+                        if (state.simulationRunning) {
+                            drawAllCharts();
+                        }
 
                         // Auto-stop if simulation is done
                         if (!data.isRunning) {
@@ -878,6 +1052,7 @@
                             btn.textContent = 'Simulate';
                             btn.className = 'simulate';
                             disableButtons(false);
+                            state.simulationRunning = false;
                             stopDataPolling();
                         }
                     }
@@ -894,37 +1069,117 @@
             document.getElementById('timeDisplay').textContent = timeString;
         }
 
+        function autoToggleLoadsByTime(hour) {
+            // Automatische Laststeuerung basierend auf Tageszeit
+            // light (0): 18-24 Uhr (Abends, ab Mitternacht aus)
+            // fridge (1): Immer an
+            // ac (2): 6-18 Uhr (Tag)
+            // washing (3): 18-21 Uhr (Abends)
+            // wallbox (4): 12-13 Uhr (Mittags 1h)
+            // heatpump (5): 18-6 Uhr (Nacht)
+            // dishwasher (6): 19-20 Uhr (Abends)
+            // tv (7): 18-22 Uhr (Abends)
+            
+            const loadStates = {
+                'light': (hour >= 18 && hour < 24),
+                'fridge': true, // Immer an
+                'ac': (hour >= 6 && hour < 18),
+                'washing': (hour >= 18 && hour < 21),
+                'wallbox': (hour >= 12 && hour < 13),
+                'heatpump': (hour >= 18 || hour < 6),
+                'dishwasher': (hour >= 19 && hour < 20),
+                'tv': (hour >= 18 && hour < 22)
+            };
+            
+            // Sende Updates an ESP32 und aktualisiere UI
+            for (const [loadName, shouldBeOn] of Object.entries(loadStates)) {
+                const btn = document.querySelector(`[data-load="${loadName}"]`);
+                if (btn) {
+                    const isCurrentlyOn = btn.classList.contains('active');
+                    
+                    if (isCurrentlyOn !== shouldBeOn) {
+                        // Toggle Button UI
+                        if (shouldBeOn) {
+                            btn.classList.add('active');
+                        } else {
+                            btn.classList.remove('active');
+                        }
+                        
+                        // Send to ESP32
+                        fetch('/simulation/load', {
+                            method: 'POST',
+                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                            body: `load=${loadName}&state=${shouldBeOn ? 1 : 0}`
+                        });
+                    }
+                }
+            }
+        }
+
         function updateCelestialPosition(hour, isDaytime) {
             const celestialIcon = document.getElementById('celestialIcon');
             const wasDay = celestialIcon.classList.contains('sun');
             
-            // Calculate position on arc
-            let progress;
-            if (isDaytime) {
-                progress = (hour - 6) / 12; // 6am to 6pm
+            // Zeitbasierte Animation:
+            // 0 Uhr: Mond in Mitte
+            // 0-6 Uhr: Mond wandert von Mitte nach rechts und geht unter
+            // 6 Uhr: Mond geht unter, Sonne geht links auf
+            // 6-18 Uhr: Sonne wandert von links über Mitte nach rechts und geht unter
+            // 18 Uhr: Sonne geht unter, Mond geht links auf
+            // 18-24 Uhr: Mond wandert von links zur Mitte
+            // 24 Uhr: Mond wieder in Mitte
+            
+            let progress, visible, shouldBeDay;
+            
+            if (hour < 6) {
+                // Nacht: 0-6 Uhr - Mond wandert von Mitte (0.5) nach rechts (1.0)
+                progress = 0.5 + (hour / 6) * 0.5; // 0.5 bis 1.0
+                visible = true;
+                shouldBeDay = false;
+            } else if (hour < 6.5) {
+                // Übergang: Mond verschwindet, Sonne erscheint
+                visible = false;
+                shouldBeDay = true;
+                progress = 0;
+            } else if (hour < 18) {
+                // Tag: 6-18 Uhr - Sonne wandert von links (0.0) nach rechts (1.0)
+                progress = (hour - 6) / 12; // 0 bis 1
+                visible = true;
+                shouldBeDay = true;
+            } else if (hour < 18.5) {
+                // Übergang: Sonne verschwindet, Mond erscheint
+                visible = false;
+                shouldBeDay = false;
+                progress = 0;
             } else {
-                let nightHour = hour >= 18 ? hour - 18 : hour + 6;
-                progress = nightHour / 12; // 6pm to 6am
+                // Nacht: 18-24 Uhr - Mond wandert von links (0.0) zur Mitte (0.5)
+                progress = ((hour - 18) / 6) * 0.5; // 0 bis 0.5
+                visible = true;
+                shouldBeDay = false;
             }
             
+            // Position auf dem Bogen berechnen
             const angle = progress * Math.PI;
             const x = 25 + Math.cos(Math.PI - angle) * 20 - 6;
             const y = 20 - Math.sin(angle) * 12 - 6;
             
-            // Check if we need to switch between sun and moon
-            if ((isDaytime && !wasDay) || (!isDaytime && wasDay)) {
+            // Sonne/Mond Wechsel
+            if ((shouldBeDay && !wasDay) || (!shouldBeDay && wasDay)) {
                 celestialIcon.style.opacity = '0';
                 setTimeout(() => {
-                    celestialIcon.className = isDaytime ? 'celestial-icon sun' : 'celestial-icon moon';
+                    celestialIcon.className = shouldBeDay ? 'celestial-icon sun' : 'celestial-icon moon';
                     celestialIcon.style.left = x + 'px';
                     celestialIcon.style.top = y + 'px';
-                    setTimeout(() => {
-                        celestialIcon.style.opacity = '1';
-                    }, 50);
+                    if (visible) {
+                        setTimeout(() => {
+                            celestialIcon.style.opacity = '1';
+                        }, 50);
+                    }
                 }, 250);
             } else {
                 celestialIcon.style.left = x + 'px';
                 celestialIcon.style.top = y + 'px';
+                celestialIcon.style.opacity = visible ? '1' : '0';
             }
         }
 
@@ -942,8 +1197,9 @@
                 btn.disabled = disable;
             });
             
+            // Loads: Disabled wenn Simulation läuft UND autoToggleLoads aktiv
             document.querySelectorAll('[data-load]').forEach(btn => {
-                btn.disabled = disable;
+                btn.disabled = disable && state.autoToggleLoads;
             });
         }
 
@@ -976,13 +1232,13 @@
             if (dataArray.length === 0) return;
 
             const maxValue = Math.max(...dataArray, 1);
-            const minValue = Math.min(...dataArray, 0);
-            const range = maxValue - minValue || 1;
+            const minValue = 0;  // Immer bei 0 starten
+            const range = maxValue || 1;
 
             const padding = {
                 top: 20,
                 right: 50,
-                bottom: 20,
+                bottom: 30,
                 left: 10
             };
 
@@ -999,14 +1255,39 @@
                 ctx.lineTo(width - padding.right, y);
                 ctx.stroke();
             }
+            
+            // Feste Zeit-Labels auf X-Achse von 00:00 bis 24:00 (24h-Bereich)
+            ctx.fillStyle = '#888';
+            ctx.font = '9px sans-serif';
+            ctx.textAlign = 'center';
+            
+            // Zeige Labels für alle 4 Stunden: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00, 24:00
+            const timePoints = [
+                { hour: 0, label: '12:00 AM' },
+                { hour: 4, label: '04:00 AM' },
+                { hour: 8, label: '08:00 AM' },
+                { hour: 12, label: '12:00 PM' },
+                { hour: 16, label: '04:00 PM' },
+                { hour: 20, label: '08:00 PM' },
+                { hour: 24, label: '12:00 AM' }
+            ];
+            
+            timePoints.forEach(point => {
+                const progress = point.hour / 24;  // 0 bis 1
+                const x = padding.left + chartWidth * progress;
+                ctx.fillText(point.label, x, height - 5);
+            });
 
-            // Data line
+            // Data line - Zeichne an tatsächlichen Zeitpositionen
             ctx.strokeStyle = color;
             ctx.lineWidth = 2;
             ctx.beginPath();
 
             dataArray.forEach((value, index) => {
-                const x = padding.left + (chartWidth / (state.maxDataPoints - 1)) * index;
+                // Position basierend auf tatsächlicher Stunde (0-24)
+                const hour = state.dataHistory.hours[index] || 0;
+                const timeProgress = hour / 24;  // 0 bis 1
+                const x = padding.left + chartWidth * timeProgress;
                 const normalizedValue = (value - minValue) / range;
                 const y = padding.top + chartHeight - (normalizedValue * chartHeight);
 
@@ -1019,13 +1300,16 @@
 
             ctx.stroke();
 
-            // Current value label
-            const currentValue = dataArray[dataArray.length - 1];
+            // Y-Achsen-Labels: MaxValue oben, 0 unten
+            const currentValue = dataArray[dataArray.length - 1] || 0;
             ctx.fillStyle = '#e0e0e0';
             ctx.font = '12px sans-serif';
             ctx.textAlign = 'right';
-            ctx.fillText(currentValue.toFixed(1) + ' ' + unit, width - padding.right + 45, padding.top + 5);
-            ctx.fillText(maxValue.toFixed(0), width - padding.right + 45, padding.top + chartHeight);
+            
+            // MaxValue oben
+            ctx.fillText(maxValue.toFixed(0) + ' ' + unit, width - padding.right + 45, padding.top + 15);
+            // 0 unten
+            ctx.fillText('0 ' + unit, width - padding.right + 45, padding.top + chartHeight - 5);
         }
 
         // Handle window resize

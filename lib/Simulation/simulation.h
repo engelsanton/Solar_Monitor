@@ -19,7 +19,7 @@ class Simulation {
 public:
     Simulation();
     void begin();
-    void start(int durationSeconds);
+    void start(int durationSeconds, bool simulateSun = false);
     void stop();
     void update();
     bool isRunning();
@@ -39,12 +39,13 @@ private:
     int durationSeconds;
     float simCurrentHour;
     INA* ina;
+    bool simulateSun; // Simuliere Sonnenintensität statt INA-Werte
     
     // Panel/Cell/Load states
     bool panels[4];
     bool cells[4];
-    bool loads[4]; // light, fridge, ac, washing
-    int loadWatts[4]; // 10, 150, 2000, 500
+    bool loads[8]; // light, fridge, ac, washing, wallbox, heatpump, dishwasher, tv
+    int loadWatts[8]; // 10, 150, 2000, 500, 11000, 3000, 2000, 300
     
     SimulationData currentData;
     

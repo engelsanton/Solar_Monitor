@@ -6,13 +6,17 @@ Simulation::Simulation() {
     startTime = 0;
     lastUpdateTime = 0;
     durationSeconds = 30;
-    simCurrentHour = 6.0;
+    simCurrentHour = 0.0;
     ina = nullptr;
+    simulateSun = false;
     
     // Initialize states
     for (int i = 0; i < 4; i++) {
         panels[i] = false;
         cells[i] = false;
+    }
+    
+    for (int i = 0; i < 8; i++) {
         loads[i] = false;
     }
     
@@ -20,17 +24,21 @@ Simulation::Simulation() {
     panels[0] = true;
     cells[0] = true;
     
-    // Load watts: light, fridge, ac, washing
-    loadWatts[0] = 10;
-    loadWatts[1] = 150;
-    loadWatts[2] = 2000;
-    loadWatts[3] = 500;
+    // Load watts: light, fridge, ac, washing, wallbox, heatpump, dishwasher, tv
+    loadWatts[0] = 10;      // Light
+    loadWatts[1] = 150;     // Fridge
+    loadWatts[2] = 2000;    // AC
+    loadWatts[3] = 500;     // Washing Machine
+    loadWatts[4] = 11000;   // Wallbox E-Auto
+    loadWatts[5] = 3000;    // Heat Pump
+    loadWatts[6] = 2000;    // Dishwasher
+    loadWatts[7] = 300;     // TV
     
     // Initialize data
     currentData.current = 0.0;
     currentData.voltage = 0.0;
     currentData.power = 0.0;
-    currentData.batteryLevel = 75.0;
+    currentData.batteryLevel = 25.0; // Start bei 25%
     currentData.load = 0.0;
     currentData.hour = 6;
     currentData.minute = 0;
@@ -46,25 +54,28 @@ void Simulation::setINA(INA* inaRef) {
     Serial.println("[DEBUG] Simulation::setINA() - INA reference set");
 }
 
-void Simulation::start(int durationSeconds) {
+void Simulation::start(int durationSeconds, bool simulateSun) {
     Serial.println("[DEBUG] Simulation::start() - Start");
     
     this->durationSeconds = durationSeconds;
+    this->simulateSun = simulateSun;
     startTime = millis();
     lastUpdateTime = startTime;
-    simCurrentHour = 6.0; // Start at 6 AM
+    simCurrentHour = 0.0; // Start at 00:00 (midnight)
     running = true;
-    currentData.batteryLevel = 75.0;
+    currentData.batteryLevel = 25.0; // Start bei 25%
     
     Serial.print("[DEBUG] Simulation::start() - Duration: ");
     Serial.print(durationSeconds);
+    Serial.print(" seconds, Simulate Sun: ");
+    Serial.println(simulateSun ? "ON" : "OFF");
     Serial.println(" seconds");
 }
 
 void Simulation::stop() {
     Serial.println("[DEBUG] Simulation::stop() - Stopping simulation");
     running = false;
-    simCurrentHour = 6.0;
+    simCurrentHour = 0.0;
     Serial.println("[DEBUG] Simulation::stop() - Simulation stopped");
 }
 
@@ -80,9 +91,9 @@ void Simulation::update() {
         return;
     }
     
-    // Calculate current simulation hour (0-24)
+    // Calculate current simulation hour (0-24), starting at 00:00
     float hoursPerSecond = 24.0 / (float)durationSeconds;
-    simCurrentHour = fmod((elapsed * hoursPerSecond + 6.0), 24.0);
+    simCurrentHour = fmod((elapsed * hoursPerSecond), 24.0);
     
     // Update time display (immer Tag, da Benutzer Licht selbst steuern)
     currentData.hour = (int)simCurrentHour;
@@ -104,30 +115,48 @@ void Simulation::calculateSolarData() {
         if (panels[i]) activePanels++;
     }
     
-    // Wenn INA verfügbar ist, echte Werte mit Berechnungsvorschrift umrechnen
-    if (ina != nullptr && ina->isFound()) {
-        float measCurrent = ina->getCurrent(); // mA
-        float measVoltage = ina->getBusVoltage(); // V
-        float measPower = ina->getPower(); // mW
+    // Wenn simulateSun aktiviert ist oder kein INA vorhanden
+    if (simulateSun || (ina == nullptr || !ina->isFound())) {
+        // Synthetische Sonnensimulation basierend auf Tageszeit
+        float solarIntensity = getSolarIntensity(simCurrentHour);
         
-        // Berechnungsvorschrift anwenden:
-        // I_Real = I_Mess × 125
-        // U_Real = U_Mess × 160
-        // P_Real = P_Mess × 10000
-        currentData.current = measCurrent * 125.0; // mA
-        currentData.voltage = measVoltage * 160.0 * 1000.0; // V × 160 in mV
-        currentData.power = measPower * 10000.0; // mW
+        // Basis-Werte für ein 2.5kWp Panel bei voller Sonne
+        // Annahme: 2500W peak, ca. 10V, 250A bei Spitzenlast
+        // Skaliert mit Sonnenintensität (0-1)
+        float baseCurrent = 250.0 * solarIntensity; // mA
+        float baseVoltage = 10000.0 * solarIntensity; // mV (10V)
+        
+        currentData.current = baseCurrent;
+        currentData.voltage = baseVoltage;
+        currentData.power = (baseVoltage * baseCurrent) / 1000.0; // mW
         
         // Skalierung mit aktiven Panels (1-4)
         float panelFactor = activePanels > 0 ? activePanels / 4.0 : 0.0;
         currentData.current *= panelFactor;
         currentData.voltage *= panelFactor;
         currentData.power *= panelFactor;
+        
     } else {
-        // Fallback: Wenn kein INA vorhanden
-        currentData.current = 0.0;
-        currentData.voltage = 0.0;
-        currentData.power = 0.0;
+        // Echte INA219-Werte mit Berechnungsvorschrift
+        float measCurrent = ina->getCurrent(); // mA
+        float measVoltage = ina->getBusVoltage(); // V
+        
+        // Berechnungsvorschrift anwenden:
+        // I_Real = I_Mess × 125
+        // U_Real = U_Mess × 160
+        // P_Real = U_Real * I_Real (berechnet, nicht aus INA)
+        currentData.current = measCurrent * 125.0; // mA
+        currentData.voltage = measVoltage * 160.0 * 1000.0; // V × 160 in mV
+        
+        // Leistung berechnen: P = U * I
+        // U in mV, I in mA -> P = (U * I) / 1000 in mW
+        currentData.power = (currentData.voltage * currentData.current) / 1000.0; // mW
+        
+        // Skalierung mit aktiven Panels (1-4)
+        float panelFactor = activePanels > 0 ? activePanels / 4.0 : 0.0;
+        currentData.current *= panelFactor;
+        currentData.voltage *= panelFactor;
+        currentData.power *= panelFactor;
     }
 }
 
@@ -146,26 +175,32 @@ void Simulation::calculateBattery() {
         if (panels[i]) activePanels++;
     }
     
-    // Battery charge/discharge calculation basierend auf echter Leistung
-    float batteryChange = 0.0;
+    // Berechne P_Netto = P_Solar - P_Last
+    float solarPowerW = currentData.power / 1000.0; // mW zu W
+    float loadPowerW = currentData.load; // W
+    float netPowerW = solarPowerW - loadPowerW; // P_Netto in W
     
-    if (activePanels > 0 && activeCells > 0) {
-        // Charging: Basierend auf tatsächlicher Solarleistung
-        // Batterie-Kapazität angenommen: 100Wh
-        // Ladeeffizienz: 85%
-        float chargingPowerW = (currentData.power / 1000.0) * 0.85; // mW zu W, mit Effizienz
-        float hoursPerSecond = 24.0 / (float)durationSeconds;
-        float chargePercentPerUpdate = (chargingPowerW / 100.0) * hoursPerSecond * 100.0; // % Ladung
-        batteryChange = chargePercentPerUpdate;
-    } else if (activeCells > 0) {
-        // Discharging: Basierend auf Last
-        float dischargePowerW = currentData.load;
-        float hoursPerSecond = 24.0 / (float)durationSeconds;
-        float dischargePercentPerUpdate = (dischargePowerW / 100.0) * hoursPerSecond * 100.0;
-        batteryChange = -dischargePercentPerUpdate;
+    // Zeitfaktor: 1 Sekunde Echtzeit = wie viele Stunden Simulation?
+    float hoursPerSecond = 24.0 / (float)durationSeconds;
+    
+    // Update-Intervall in Sekunden (100ms = 0.1s)
+    float deltaTimeSeconds = 0.1; // 100ms Loop
+    
+    // Formel: ΔE(Wh) = (P_Netto × Zeitfaktor × Δt(in Sek)) / 3600
+    float deltaEnergyWh = (netPowerW * hoursPerSecond * deltaTimeSeconds) / 3600.0;
+    
+    // Batterie-Kapazität: 4 Zellen × 5 kWh = 20 kWh
+    float batteryCapacityWh = activeCells * 5000.0; // Wh
+    
+    // ΔE in Prozent umrechnen
+    float deltaPercent = (deltaEnergyWh / batteryCapacityWh) * 100.0;
+    
+    // Ladeeffizienz: 85% beim Laden
+    if (netPowerW > 0) {
+        deltaPercent *= 0.85;
     }
     
-    currentData.batteryLevel += batteryChange;
+    currentData.batteryLevel += deltaPercent;
     
     // Clamp between 0 and 100
     if (currentData.batteryLevel < 0) currentData.batteryLevel = 0;
@@ -176,7 +211,7 @@ void Simulation::calculateLoad() {
     float totalLoad = 0.0;
     
     // Summiere aktive Lasten
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 8; i++) {
         if (loads[i]) {
             totalLoad += loadWatts[i];
         }
@@ -266,6 +301,10 @@ void Simulation::setLoadState(String load, bool state) {
     else if (load == "fridge") index = 1;
     else if (load == "ac") index = 2;
     else if (load == "washing") index = 3;
+    else if (load == "wallbox") index = 4;
+    else if (load == "heatpump") index = 5;
+    else if (load == "dishwasher") index = 6;
+    else if (load == "tv") index = 7;
     
     if (index >= 0) {
         loads[index] = state;
