@@ -35,6 +35,55 @@
         #header h1 {
             font-size: 1.2rem;
             font-weight: 600;
+            flex: 1;
+        }
+
+        .time-celestial-container {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 3px;
+        }
+
+        .celestial-arc {
+            position: relative;
+            width: 50px;
+            height: 25px;
+        }
+
+        .arc-line {
+            stroke: transparent;
+            stroke-width: 1.5;
+            fill: none;
+        }
+
+        .celestial-icon {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            box-shadow: 0 0 8px currentColor;
+            transition: opacity 0.5s ease, left 0.3s ease, top 0.3s ease;
+        }
+
+        .celestial-icon.sun {
+            background: #ffd700;
+            color: #ffd700;
+        }
+
+        .celestial-icon.moon {
+            background: #c0c0c0;
+            color: #c0c0c0;
+        }
+
+        .time-display {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: #ffffff;
+            text-align: center;
         }
 
         #simulateBtn {
@@ -85,6 +134,14 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Disabled state for buttons during simulation */
+        .toggle-btn:disabled,
+        .load-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         /* Cards */
@@ -335,12 +392,6 @@
         }
 
         /* Responsive Design */
-        @media (min-width: 480px) {
-            #content {
-                max-width: 95%;
-            }
-        }
-
         @media (min-width: 768px) {
             #content {
                 max-width: 90%;
@@ -366,12 +417,6 @@
             }
         }
 
-        @media (min-width: 1440px) {
-            #content {
-                max-width: 1000px;
-            }
-        }
-
         @media (max-width: 400px) {
             #header h1 {
                 font-size: 1rem;
@@ -393,6 +438,15 @@
     <!-- Header -->
     <div id="header">
         <h1>Solar Monitor</h1>
+        <div class="time-celestial-container">
+            <div class="celestial-arc">
+                <svg width="50" height="25" style="position: absolute; top: 0; left: 0;">
+                    <path class="arc-line" d="M 5,20 Q 25,8 45,20" />
+                </svg>
+                <div class="celestial-icon sun" id="celestialIcon"></div>
+            </div>
+            <div class="time-display" id="timeDisplay">06:00 AM</div>
+        </div>
         <button id="simulateBtn" class="simulate">Simulate</button>
     </div>
 
@@ -403,7 +457,7 @@
             <div class="card">
                 <div class="card-title">Solar Panels</div>
                 <div class="button-group">
-                    <button class="toggle-btn" data-panel="1">Panel 1</button>
+                    <button class="toggle-btn active" data-panel="1">Panel 1</button>
                     <button class="toggle-btn" data-panel="2">Panel 2</button>
                     <button class="toggle-btn" data-panel="3">Panel 3</button>
                     <button class="toggle-btn" data-panel="4">Panel 4</button>
@@ -431,7 +485,7 @@
             <div class="card">
                 <div class="card-title">Battery Cells</div>
                 <div class="button-group">
-                    <button class="toggle-btn" data-cell="1">Cell 1</button>
+                    <button class="toggle-btn active" data-cell="1">Cell 1</button>
                     <button class="toggle-btn" data-cell="2">Cell 2</button>
                     <button class="toggle-btn" data-cell="3">Cell 3</button>
                     <button class="toggle-btn" data-cell="4">Cell 4</button>
@@ -486,9 +540,9 @@
                 <div class="card-title">Settings</div>
                 
                 <div class="setting-row">
-                    <span class="setting-label">Show Real Data</span>
+                    <span class="setting-label">Show real data</span>
                     <label class="switch">
-                        <input type="checkbox" id="realDataToggle">
+                        <input type="checkbox" id="showRealDataToggle">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -496,7 +550,7 @@
                 <div class="setting-row">
                     <span class="setting-label">Simulation Duration (seconds per day)</span>
                     <div class="input-group">
-                        <input type="number" id="simDuration" value="30" min="1" max="999999">
+                        <input type="number" id="simDuration" value="48" min="1" max="999999">
                     </div>
                 </div>
 
@@ -514,27 +568,19 @@
     </div>
 
     <script>
-        // Global State
+        // Global State - NO SIMULATION LOGIC HERE, only UI state
         const state = {
-            isSimulating: false,
             currentPage: 'modules',
-            panels: [false, false, false, false],
-            cells: [false, false, false, false],
-            loads: {
-                light: false,
-                fridge: false,
-                ac: false,
-                washing: false
-            },
-            data: {
+            dataHistory: {
                 current: [],
                 voltage: [],
                 power: [],
                 battery: [],
                 load: []
             },
-            maxDataPoints: 60,
-            simulationInterval: null
+            maxDataPoints: 30,
+            updateInterval: null,
+            showRealData: false
         };
 
         // Initialize
@@ -545,18 +591,42 @@
         });
 
         function initializeUI() {
-            // Set initial page
             showPage('modules');
+            
+            // Initialisiere Standardzustände an ESP32 senden
+            // Panel 1 ist standardmäßig an
+            fetch('/set', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'transistor=1&state=1'
+            }).then(() => {
+                return fetch('/simulation/panel', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'panel=1&state=1'
+                });
+            }).then(() => {
+                // Cell 1 ist standardmäßig an
+                return fetch('/simulation/cell', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'cell=1&state=1'
+                });
+            }).then(() => {
+                console.log('Initial states synchronized');
+            }).catch(err => {
+                console.error('Error initializing states:', err);
+            });
         }
 
         function initializeCharts() {
-            // Initialize data arrays with zeros
+            // Initialize empty arrays
             for (let i = 0; i < state.maxDataPoints; i++) {
-                state.data.current.push(0);
-                state.data.voltage.push(0);
-                state.data.power.push(0);
-                state.data.battery.push(75);
-                state.data.load.push(0);
+                state.dataHistory.current.push(0);
+                state.dataHistory.voltage.push(0);
+                state.dataHistory.power.push(0);
+                state.dataHistory.battery.push(75);
+                state.dataHistory.load.push(0);
             }
             drawAllCharts();
         }
@@ -572,21 +642,58 @@
                 });
             });
 
-            // Panel Buttons
+            // Panel Buttons - Switch Transistors AND set simulation state
             document.querySelectorAll('[data-panel]').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const panelIndex = parseInt(this.dataset.panel) - 1;
-                    state.panels[panelIndex] = !state.panels[panelIndex];
+                    const panelNum = parseInt(this.dataset.panel);
+                    const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
+                    
+                    console.log(`Panel ${panelNum} clicked, new state: ${newState}`);
+                    
+                    // Send to ESP32 - Transistor control (hardware)
+                    fetch('/set', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `transistor=${panelNum}&state=${newState ? 1 : 0}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Transistor response:', data);
+                    })
+                    .catch(err => {
+                        console.error('Transistor error:', err);
+                    });
+                    
+                    // Send to ESP32 - Simulation state
+                    fetch('/simulation/panel', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `panel=${panelNum}&state=${newState ? 1 : 0}`
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Simulation response:', data);
+                    })
+                    .catch(err => {
+                        console.error('Simulation error:', err);
+                    });
                 });
             });
 
             // Cell Buttons
             document.querySelectorAll('[data-cell]').forEach(btn => {
                 btn.addEventListener('click', function() {
-                    const cellIndex = parseInt(this.dataset.cell) - 1;
-                    state.cells[cellIndex] = !state.cells[cellIndex];
+                    const cellNum = parseInt(this.dataset.cell);
+                    const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
+                    
+                    // Send to ESP32
+                    fetch('/simulation/cell', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `cell=${cellNum}&state=${newState ? 1 : 0}`
+                    });
                 });
             });
 
@@ -594,9 +701,15 @@
             document.querySelectorAll('[data-load]').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const loadType = this.dataset.load;
-                    state.loads[loadType] = !state.loads[loadType];
+                    const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
-                    updateLoadDisplay();
+                    
+                    // Send to ESP32
+                    fetch('/simulation/load', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `load=${loadType}&state=${newState ? 1 : 0}`
+                    });
                 });
             });
 
@@ -604,10 +717,32 @@
             document.getElementById('systemCheckBtn').addEventListener('click', function() {
                 alert('System OK');
             });
+
+            // Show Real Data Toggle
+            document.getElementById('showRealDataToggle').addEventListener('change', function() {
+                state.showRealData = this.checked;
+                console.log('Show real data:', state.showRealData);
+                
+                // Reset data when switching
+                state.dataHistory.current = [];
+                state.dataHistory.voltage = [];
+                state.dataHistory.power = [];
+                state.dataHistory.battery = [];
+                state.dataHistory.load = [];
+                
+                // Reinitialize with zeros
+                for (let i = 0; i < state.maxDataPoints; i++) {
+                    state.dataHistory.current.push(0);
+                    state.dataHistory.voltage.push(0);
+                    state.dataHistory.power.push(0);
+                    state.dataHistory.battery.push(75);
+                    state.dataHistory.load.push(0);
+                }
+                drawAllCharts();
+            });
         }
 
         function showPage(pageName) {
-            // Update state
             state.currentPage = pageName;
 
             // Hide all pages
@@ -637,121 +772,187 @@
 
         function toggleSimulation() {
             const btn = document.getElementById('simulateBtn');
-            state.isSimulating = !state.isSimulating;
+            const isCurrentlyRunning = btn.classList.contains('stop');
 
-            if (state.isSimulating) {
-                btn.textContent = 'Stop';
-                btn.className = 'stop';
-                startSimulation();
+            if (!isCurrentlyRunning) {
+                // Start simulation
+                const duration = parseInt(document.getElementById('simDuration').value) || 30;
+                
+                fetch('/simulation', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=start&duration=${duration}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.textContent = 'Stop';
+                        btn.className = 'stop';
+                        disableButtons(true);
+                        startDataPolling();
+                    }
+                });
             } else {
-                btn.textContent = 'Simulate';
-                btn.className = 'simulate';
-                stopSimulation();
+                // Stop simulation
+                fetch('/simulation', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: 'action=stop'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        btn.textContent = 'Simulate';
+                        btn.className = 'simulate';
+                        disableButtons(false);
+                        stopDataPolling();
+                    }
+                });
             }
         }
 
-        function startSimulation() {
-            state.simulationInterval = setInterval(function() {
-                updateSimulationData();
-                drawAllCharts();
-                updateDisplayValues();
-            }, 1000);
+        function startDataPolling() {
+            // Poll data from ESP32 every 100ms
+            state.updateInterval = setInterval(fetchSimulationData, 100);
         }
 
-        function stopSimulation() {
-            if (state.simulationInterval) {
-                clearInterval(state.simulationInterval);
-                state.simulationInterval = null;
+        function stopDataPolling() {
+            if (state.updateInterval) {
+                clearInterval(state.updateInterval);
+                state.updateInterval = null;
             }
         }
 
-        function updateSimulationData() {
-            // Count active panels
-            const activePanels = state.panels.filter(p => p).length;
+        function fetchSimulationData() {
+            const endpoint = state.showRealData ? '/real/data' : '/simulation/data';
+            
+            fetch(endpoint)
+                .then(response => response.json())
+                .then(data => {
+                    if (state.showRealData) {
+                        // Real INA219 data
+                        state.dataHistory.current.push(data.current);
+                        state.dataHistory.voltage.push(data.voltage);
+                        state.dataHistory.power.push(data.power);
+                        state.dataHistory.battery.push(0); // No battery in real data
+                        state.dataHistory.load.push(0);    // No load in real data
+                        
+                        // Keep array size limited
+                        if (state.dataHistory.current.length > state.maxDataPoints) {
+                            state.dataHistory.current.shift();
+                            state.dataHistory.voltage.shift();
+                            state.dataHistory.power.shift();
+                            state.dataHistory.battery.shift();
+                            state.dataHistory.load.shift();
+                        }
+                        
+                        // Update UI with real data (no time/celestial display)
+                        updateDisplayValues(0, 0);
+                        drawAllCharts();
+                    } else {
+                        // Simulation data
+                        state.dataHistory.current.push(data.current);
+                        state.dataHistory.voltage.push(data.voltage);
+                        state.dataHistory.power.push(data.power);
+                        state.dataHistory.battery.push(data.batteryLevel);
+                        state.dataHistory.load.push(data.load);
 
-            // Simulate solar panel data with realistic variations (cloud effects)
-            const cloudFactor = 0.7 + Math.random() * 0.3; // 70-100% efficiency
-            const baseCurrent = activePanels * 500; // 500mA per panel
-            const baseVoltage = activePanels * 3500; // 3500mV per panel
+                        // Keep array size limited
+                        if (state.dataHistory.current.length > state.maxDataPoints) {
+                            state.dataHistory.current.shift();
+                            state.dataHistory.voltage.shift();
+                            state.dataHistory.power.shift();
+                            state.dataHistory.battery.shift();
+                            state.dataHistory.load.shift();
+                        }
 
-            const current = baseCurrent * cloudFactor + (Math.random() - 0.5) * 100;
-            const voltage = baseVoltage + (Math.random() - 0.5) * 200;
-            const power = (current * voltage) / 1000; // Convert to mW
+                        // Update UI
+                        updateTimeDisplay(data.hour, data.minute, data.isDaytime);
+                        updateCelestialPosition(data.hour + data.minute / 60.0, data.isDaytime);
+                        updateDisplayValues(data.batteryLevel, data.load);
+                        drawAllCharts();
 
-            // Update data arrays (rolling window)
-            state.data.current.push(current);
-            state.data.voltage.push(voltage);
-            state.data.power.push(power);
+                        // Auto-stop if simulation is done
+                        if (!data.isRunning) {
+                            const btn = document.getElementById('simulateBtn');
+                            btn.textContent = 'Simulate';
+                            btn.className = 'simulate';
+                            disableButtons(false);
+                            stopDataPolling();
+                        }
+                    }
+                })
+                .catch(err => console.error('Error fetching data:', err));
+        }
 
-            if (state.data.current.length > state.maxDataPoints) {
-                state.data.current.shift();
-                state.data.voltage.shift();
-                state.data.power.shift();
+        function updateTimeDisplay(hour, minute, isDaytime) {
+            let displayHour = hour % 12;
+            if (displayHour === 0) displayHour = 12;
+            const ampm = hour < 12 ? 'AM' : 'PM';
+            
+            const timeString = `${displayHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${ampm}`;
+            document.getElementById('timeDisplay').textContent = timeString;
+        }
+
+        function updateCelestialPosition(hour, isDaytime) {
+            const celestialIcon = document.getElementById('celestialIcon');
+            const wasDay = celestialIcon.classList.contains('sun');
+            
+            // Calculate position on arc
+            let progress;
+            if (isDaytime) {
+                progress = (hour - 6) / 12; // 6am to 6pm
+            } else {
+                let nightHour = hour >= 18 ? hour - 18 : hour + 6;
+                progress = nightHour / 12; // 6pm to 6am
             }
-
-            // Battery simulation (slowly charging/discharging)
-            const activeCells = state.cells.filter(c => c).length;
-            const currentBattery = state.data.battery[state.data.battery.length - 1];
-            let batteryChange = 0;
-
-            if (activePanels > 0 && activeCells > 0) {
-                batteryChange = (Math.random() * 0.5); // Charging
-            } else if (activeCells > 0) {
-                batteryChange = -(Math.random() * 0.3); // Discharging
-            }
-
-            const newBattery = Math.max(0, Math.min(100, currentBattery + batteryChange));
-            state.data.battery.push(newBattery);
-
-            if (state.data.battery.length > state.maxDataPoints) {
-                state.data.battery.shift();
-            }
-
-            // Load calculation
-            let totalLoad = 0;
-            Object.keys(state.loads).forEach(loadType => {
-                if (state.loads[loadType]) {
-                    const btn = document.querySelector(`[data-load="${loadType}"]`);
-                    totalLoad += parseInt(btn.dataset.watts);
-                }
-            });
-
-            // Add some variation
-            totalLoad += (Math.random() - 0.5) * 20;
-
-            state.data.load.push(totalLoad);
-            if (state.data.load.length > state.maxDataPoints) {
-                state.data.load.shift();
+            
+            const angle = progress * Math.PI;
+            const x = 25 + Math.cos(Math.PI - angle) * 20 - 6;
+            const y = 20 - Math.sin(angle) * 12 - 6;
+            
+            // Check if we need to switch between sun and moon
+            if ((isDaytime && !wasDay) || (!isDaytime && wasDay)) {
+                celestialIcon.style.opacity = '0';
+                setTimeout(() => {
+                    celestialIcon.className = isDaytime ? 'celestial-icon sun' : 'celestial-icon moon';
+                    celestialIcon.style.left = x + 'px';
+                    celestialIcon.style.top = y + 'px';
+                    setTimeout(() => {
+                        celestialIcon.style.opacity = '1';
+                    }, 50);
+                }, 250);
+            } else {
+                celestialIcon.style.left = x + 'px';
+                celestialIcon.style.top = y + 'px';
             }
         }
 
-        function updateDisplayValues() {
-            // Battery Level
-            const batteryLevel = state.data.battery[state.data.battery.length - 1];
+        function updateDisplayValues(batteryLevel, load) {
             document.getElementById('batteryLevel').textContent = batteryLevel.toFixed(1) + '%';
-
-            // Current Load
-            updateLoadDisplay();
+            document.getElementById('currentLoad').textContent = load.toFixed(0) + ' W';
         }
 
-        function updateLoadDisplay() {
-            let totalLoad = 0;
-            Object.keys(state.loads).forEach(loadType => {
-                if (state.loads[loadType]) {
-                    const btn = document.querySelector(`[data-load="${loadType}"]`);
-                    totalLoad += parseInt(btn.dataset.watts);
-                }
+        function disableButtons(disable) {
+            document.querySelectorAll('[data-panel]').forEach(btn => {
+                btn.disabled = disable;
             });
-
-            document.getElementById('currentLoad').textContent = totalLoad + ' W';
+            
+            document.querySelectorAll('[data-cell]').forEach(btn => {
+                btn.disabled = disable;
+            });
+            
+            document.querySelectorAll('[data-load]').forEach(btn => {
+                btn.disabled = disable;
+            });
         }
 
         function drawAllCharts() {
-            drawChart('currentChart', state.data.current, '#ff9800', 'mA');
-            drawChart('voltageChart', state.data.voltage, '#2196f3', 'mV');
-            drawChart('powerChart', state.data.power, '#4caf50', 'mW');
-            drawChart('batteryChart', state.data.battery, '#9c27b0', '%');
-            drawChart('loadChart', state.data.load, '#f44336', 'W');
+            drawChart('currentChart', state.dataHistory.current, '#ff9800', 'mA');
+            drawChart('voltageChart', state.dataHistory.voltage, '#2196f3', 'mV');
+            drawChart('powerChart', state.dataHistory.power, '#4caf50', 'mW');
+            drawChart('batteryChart', state.dataHistory.battery, '#9c27b0', '%');
+            drawChart('loadChart', state.dataHistory.load, '#f44336', 'W');
         }
 
         function drawChart(canvasId, dataArray, color, unit) {
@@ -762,7 +963,6 @@
             const dpr = window.devicePixelRatio || 1;
             const rect = canvas.getBoundingClientRect();
 
-            // Set canvas size
             canvas.width = rect.width * dpr;
             canvas.height = rect.height * dpr;
             ctx.scale(dpr, dpr);
@@ -770,18 +970,15 @@
             const width = rect.width;
             const height = rect.height;
 
-            // Clear canvas
             ctx.fillStyle = '#2a2a2a';
             ctx.fillRect(0, 0, width, height);
 
             if (dataArray.length === 0) return;
 
-            // Find min and max for scaling
             const maxValue = Math.max(...dataArray, 1);
             const minValue = Math.min(...dataArray, 0);
             const range = maxValue - minValue || 1;
 
-            // Add padding
             const padding = {
                 top: 20,
                 right: 50,
@@ -792,7 +989,7 @@
             const chartWidth = width - padding.left - padding.right;
             const chartHeight = height - padding.top - padding.bottom;
 
-            // Draw grid lines
+            // Grid lines
             ctx.strokeStyle = '#3a3a3a';
             ctx.lineWidth = 1;
             for (let i = 0; i <= 4; i++) {
@@ -803,7 +1000,7 @@
                 ctx.stroke();
             }
 
-            // Draw data line
+            // Data line
             ctx.strokeStyle = color;
             ctx.lineWidth = 2;
             ctx.beginPath();
@@ -822,14 +1019,12 @@
 
             ctx.stroke();
 
-            // Draw current value label
+            // Current value label
             const currentValue = dataArray[dataArray.length - 1];
             ctx.fillStyle = '#e0e0e0';
             ctx.font = '12px sans-serif';
             ctx.textAlign = 'right';
             ctx.fillText(currentValue.toFixed(1) + ' ' + unit, width - padding.right + 45, padding.top + 5);
-
-            // Draw max value label
             ctx.fillText(maxValue.toFixed(0), width - padding.right + 45, padding.top + chartHeight);
         }
 

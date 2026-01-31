@@ -1,7 +1,7 @@
 #include "web_server.h"
 
-WebServerManager::WebServerManager(Transistor* transistorRef) 
-    : server(80), transistor(transistorRef) {
+WebServerManager::WebServerManager(Transistor* transistorRef, Simulation* simulationRef, INA* inaRef) 
+    : server(80), transistor(transistorRef), simulation(simulationRef), ina(inaRef) {
 }
 
 void WebServerManager::begin() {
@@ -16,6 +16,17 @@ void WebServerManager::begin() {
     server.on("/", [this]() { this->handleRoot(); });
     server.on("/set", HTTP_POST, [this]() { this->handleSetTransistor(); });
     server.on("/status", HTTP_GET, [this]() { this->handleGetStatus(); });
+    
+    // Simulation endpoints
+    server.on("/simulation", HTTP_POST, [this]() { this->handleSimulation(); });
+    server.on("/simulation/data", HTTP_GET, [this]() { this->handleSimulationData(); });
+    server.on("/simulation/panel", HTTP_POST, [this]() { this->handleSetPanel(); });
+    server.on("/simulation/cell", HTTP_POST, [this]() { this->handleSetCell(); });
+    server.on("/simulation/load", HTTP_POST, [this]() { this->handleSetLoad(); });
+    
+    // Real data endpoint
+    server.on("/real/data", HTTP_GET, [this]() { this->handleRealData(); });
+    
     server.onNotFound([this]() { this->handleNotFound(); });
     
     server.begin();
@@ -38,13 +49,20 @@ void WebServerManager::handleRoot() {
 }
 
 void WebServerManager::handleSetTransistor() {
+    Serial.println("[DEBUG] handleSetTransistor() - Start");
+    
     if (!server.hasArg("transistor") || !server.hasArg("state")) {
+        Serial.println("[DEBUG] handleSetTransistor() - Missing parameters");
         server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
         return;
     }
     
     int transistorNum = server.arg("transistor").toInt();
     int state = server.arg("state").toInt();
+    Serial.print("[DEBUG] handleSetTransistor() - Transistor ");
+    Serial.print(transistorNum);
+    Serial.print(", State: ");
+    Serial.println(state);
     
     // Aktuellen Zustand abrufen
     int t1 = transistor->getState1();
@@ -65,6 +83,8 @@ void WebServerManager::handleSetTransistor() {
     
     // Neuen Zustand setzen
     transistor->setState(t1, t2, t3, t4);
+    // WICHTIG: GPIO-Pins aktualisieren!
+    transistor->update();
     
     String response = "{\"success\":true,\"transistor\":" + String(transistorNum) + 
                      ",\"state\":" + String(state) + "}";
@@ -73,7 +93,8 @@ void WebServerManager::handleSetTransistor() {
     Serial.print("Transistor ");
     Serial.print(transistorNum);
     Serial.print(" auf ");
-    Serial.println(state ? "AN" : "AUS");
+    Serial.print(state ? "AN" : "AUS");
+    Serial.println(" geschaltet (GPIO aktualisiert)");
 }
 
 void WebServerManager::handleGetStatus() {
@@ -89,4 +110,119 @@ void WebServerManager::handleGetStatus() {
 
 void WebServerManager::handleNotFound() {
     server.send(404, "text/plain", "404: Not Found");
+}
+
+void WebServerManager::handleSimulation() {
+    Serial.println("[DEBUG] handleSimulation() - Start");
+    
+    if (!server.hasArg("action")) {
+        Serial.println("[DEBUG] handleSimulation() - Missing action parameter");
+        server.send(400, "application/json", "{\"error\":\"Missing action parameter\"}");
+        return;
+    }
+    
+    String action = server.arg("action");
+    
+    if (action == "start") {
+        int duration = 30; // default
+        if (server.hasArg("duration")) {
+            duration = server.arg("duration").toInt();
+        }
+        simulation->start(duration);
+        server.send(200, "application/json", "{\"success\":true,\"action\":\"start\"}");
+    } 
+    else if (action == "stop") {
+        simulation->stop();
+        server.send(200, "application/json", "{\"success\":true,\"action\":\"stop\"}");
+    }
+    else {
+        server.send(400, "application/json", "{\"error\":\"Invalid action\"}");
+    }
+}
+
+void WebServerManager::handleSimulationData() {
+    String json = simulation->getDataAsJson();
+    server.send(200, "application/json", json);
+}
+
+void WebServerManager::handleSetPanel() {
+    Serial.println("[DEBUG] handleSetPanel() - Start");
+    
+    if (!server.hasArg("panel") || !server.hasArg("state")) {
+        Serial.println("[DEBUG] handleSetPanel() - Missing parameters");
+        server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
+        return;
+    }
+    
+    int panel = server.arg("panel").toInt();
+    bool state = server.arg("state").toInt() == 1;
+    Serial.print("[DEBUG] handleSetPanel() - Panel ");
+    Serial.print(panel);
+    Serial.print(", State: ");
+    Serial.println(state ? "ON" : "OFF");
+    
+    simulation->setPanelState(panel, state);
+    
+    String response = "{\"success\":true,\"panel\":" + String(panel) + 
+                     ",\"state\":" + String(state ? "true" : "false") + "}";
+    server.send(200, "application/json", response);
+}
+
+void WebServerManager::handleSetCell() {
+    if (!server.hasArg("cell") || !server.hasArg("state")) {
+        server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
+        return;
+    }
+    
+    int cell = server.arg("cell").toInt();
+    bool state = server.arg("state").toInt() == 1;
+    
+    simulation->setCellState(cell, state);
+    
+    String response = "{\"success\":true,\"cell\":" + String(cell) + 
+                     ",\"state\":" + String(state ? "true" : "false") + "}";
+    server.send(200, "application/json", response);
+}
+
+void WebServerManager::handleSetLoad() {
+    if (!server.hasArg("load") || !server.hasArg("state")) {
+        server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
+        return;
+    }
+    
+    String load = server.arg("load");
+    bool state = server.arg("state").toInt() == 1;
+    
+    simulation->setLoadState(load, state);
+    
+    String response = "{\"success\":true,\"load\":\"" + load + 
+                     "\",\"state\":" + String(state ? "true" : "false") + "}";
+    server.send(200, "application/json", response);
+}
+
+void WebServerManager::handleRealData() {
+    Serial.println("[DEBUG] handleRealData() - Start");
+    
+    // Echte INA219-Daten abrufen
+    float busV = ina->getBusVoltage();
+    float currentMA = ina->getCurrent();
+    float powerMW = ina->getPower();
+    
+    Serial.print("[DEBUG] handleRealData() - Reading: V=");
+    Serial.print(busV);
+    Serial.print("V, I=");
+    Serial.print(currentMA);
+    Serial.print("mA, P=");
+    Serial.print(powerMW);
+    Serial.println("mW");
+    
+    // JSON-Response erstellen
+    String json = "{";
+    json += "\"voltage\":" + String(busV, 2) + ",";
+    json += "\"current\":" + String(currentMA, 2) + ",";
+    json += "\"power\":" + String(powerMW, 2);
+    json += "}";
+    
+    server.send(200, "application/json", json);
+    Serial.println("[DEBUG] handleRealData() - Data sent to client");
 }

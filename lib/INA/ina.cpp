@@ -37,15 +37,3 @@ float INA::getPower() {
     if (!found) return 0.0;
     return ina219.getPower_mW();
 }
-
-void INA::printSerialData() {
-    if (!found) return;
-    
-    Serial.print("Bus: ");
-    Serial.print(getBusVoltage(), 4);
-    Serial.print("V | Strom: ");
-    Serial.print(getCurrent(), 4);
-    Serial.print("mA | Leistung: ");
-    Serial.print(getPower(), 4);
-    Serial.println("mW");
-}

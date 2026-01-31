@@ -6,12 +6,14 @@
 #include "transistor.h"
 #include "wifi_manager.h"
 #include "web_server.h"
+#include "simulation.h"
 
 INA ina;
 OLED oled;
 Transistor transistor;
+Simulation simulation;
 WiFiManager wifiManager("Solar_Monitor", "12345678");
-WebServerManager webServer(&transistor);
+WebServerManager webServer(&transistor, &simulation, &ina);
 
 bool oled_found = false;
 bool ina219_found = false;
@@ -85,6 +87,10 @@ void setup() {
   // WiFi Access Point starten
   wifiManager.begin();
   
+  // Simulation initialisieren
+  simulation.begin();
+  simulation.setINA(&ina);
+  
   // Webserver starten
   webServer.begin();
   
@@ -95,8 +101,8 @@ void loop() {
   // Webserver Anfragen verarbeiten
   webServer.handleClient();
   
-  // Transistoren aktualisieren
-  transistor.update();
+  // Simulation aktualisieren
+  simulation.update();
   
   // OLED aktualisieren
   if (oled_found) {
@@ -107,9 +113,6 @@ void loop() {
       shuntV = ina.getShuntVoltage();
       currentMA = ina.getCurrent();
       powerMW = ina.getPower();
-      
-      // Serial ausgabe
-      ina.printSerialData();
     }
     
     oled.showStatus(
@@ -124,5 +127,5 @@ void loop() {
     Serial.println("OLED nicht verfügbar!");
   }
   
-  delay(500);
+  delay(100); // Faster loop for smoother simulation
 }

@@ -13,7 +13,6 @@ public:
     float getShuntVoltage();
     float getCurrent();
     float getPower();
-    void printSerialData();
 
 private:
     Adafruit_INA219 ina219;
