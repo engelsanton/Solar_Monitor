@@ -24,6 +24,7 @@ void WebServerManager::begin() {
     server.on("/simulation/cell", HTTP_POST, [this]() { this->handleSetCell(); });
     server.on("/simulation/load", HTTP_POST, [this]() { this->handleSetLoad(); });
     server.on("/simulation/autotoggle", HTTP_POST, [this]() { this->handleAutoToggleLoads(); });
+    server.on("/simulation/currentmultiplier", HTTP_POST, [this]() { this->handleCurrentMultiplier(); });
     server.on("/simulation/overview", HTTP_GET, [this]() { this->handleSimulationOverview(); });
     
     // Real data endpoint
@@ -107,6 +108,23 @@ void WebServerManager::handleGetStatus() {
     json += "\"t2\":" + String(transistor->getState2()) + ",";
     json += "\"t3\":" + String(transistor->getState3()) + ",";
     json += "\"t4\":" + String(transistor->getState4());
+    json += "}";
+    
+    server.sendHeader("Connection", "close");
+    server.send(200, "application/json", json);
+}
+
+void WebServerManager::handleCurrentMultiplier() {
+    if (!server.hasArg("multiplier")) {
+        server.send(400, "application/json", "{\"success\":false,\"error\":\"Missing multiplier parameter\"}");
+        return;
+    }
+    
+    float multiplier = server.arg("multiplier").toFloat();
+    simulation->setCurrentMultiplier(multiplier);
+    
+    String json = "{\"success\":true,\"currentMultiplier\":";
+    json += String(multiplier);
     json += "}";
     
     server.sendHeader("Connection", "close");

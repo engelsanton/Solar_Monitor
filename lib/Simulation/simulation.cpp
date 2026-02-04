@@ -1,6 +1,6 @@
 #include "simulation.h"
 
-Simulation::Simulation() {
+Simulation::Simulation(INA* inaRef) : ina(inaRef) {
     // Initialize all states to false
     for (int i = 0; i < 4; i++) {
         panels[i] = false;
@@ -27,6 +27,7 @@ Simulation::Simulation() {
     running = false;
     simulateSun = false;
     autoToggleLoads = false;
+    currentMultiplier = 2000.0;  // Default calibration multiplier
     startTime = 0;
     lastUpdateTime = 0;
     durationSeconds = 48;
@@ -154,7 +155,7 @@ void Simulation::calculateSolarData() {
     // Use snapshot of panels from simulation start
     int activePanels = activePanelsSnapshot;
     
-    if (activePanels == 0 || !simulateSun) {
+    if (activePanels == 0) {
         currentData.voltage = 0.0;
         currentData.current = 0.0;
         currentData.powerGenerated = 0.0;
@@ -162,6 +163,57 @@ void Simulation::calculateSolarData() {
         return;
     }
     
+    float baseVoltage = 0.0;
+    float currentPerPanel = 0.0;
+    
+    // Calibration mode: Use real INA219 current measurements
+    if (!simulateSun) {
+        // Read real current from INA219
+        float realCurrent = ina->getCurrent();  // mA
+        
+        // Apply calibration factor for current
+        currentPerPanel = (realCurrent * currentMultiplier) / 1000.0;  // Convert mA to A and scale
+        
+        // Simulate voltage based on time of day (same as simulation mode)
+        if (simCurrentHour >= 20.0 || simCurrentHour < 4.0) {
+            baseVoltage = 0.0;
+        } 
+        else if (simCurrentHour >= 4.0 && simCurrentHour < 6.0) {
+            float dawnProgress = (simCurrentHour - 4.0) / 2.0;
+            baseVoltage = 200.0 * dawnProgress;
+        }
+        else if (simCurrentHour >= 6.0 && simCurrentHour < 12.0) {
+            float morningProgress = (simCurrentHour - 6.0) / 6.0;
+            baseVoltage = 200.0 - (20.0 * morningProgress);
+        }
+        else if (simCurrentHour >= 12.0 && simCurrentHour < 18.0) {
+            float afternoonProgress = (simCurrentHour - 12.0) / 6.0;
+            baseVoltage = 180.0 + (20.0 * afternoonProgress);
+        }
+        else if (simCurrentHour >= 18.0 && simCurrentHour < 20.0) {
+            float duskProgress = (simCurrentHour - 18.0) / 2.0;
+            baseVoltage = 200.0 * (1.0 - duskProgress);
+        }
+        
+        // Set irradiance based on measured current (for display)
+        currentData.irradiance = min(1.0f, currentPerPanel / 12.0f);
+        
+        // Apply jitter to voltage (same as simulation mode)
+        if (baseVoltage > 0.0) {
+            baseVoltage = applyJitter(baseVoltage, 5.0);
+            if (baseVoltage < 0.0) baseVoltage = 0.0;
+            if (baseVoltage > 220.0) baseVoltage = 220.0;
+        }
+        
+        // Calculate total current and power
+        float totalCurrent = currentPerPanel * activePanels;
+        currentData.voltage = baseVoltage;
+        currentData.current = totalCurrent;
+        currentData.powerGenerated = baseVoltage * totalCurrent;
+        return;
+    }
+    
+    // Simulation mode: Use solar profile
     // Get base irradiance from solar profile
     float irradiance = getSolarIrradiance(simCurrentHour);
     
@@ -186,9 +238,6 @@ void Simulation::calculateSolarData() {
     // Afternoon (12:00-18:00): Current drops, voltage rises
     // Evening (18:00): Current = 0A, voltage back at 200V
     // Late dusk (18:00-20:00): Voltage drops to 0V
-    
-    float baseVoltage = 0.0;
-    float currentPerPanel = 0.0;
     
     if (simCurrentHour >= 20.0 || simCurrentHour < 4.0) {
         // Night (20:00 - 4:00): Complete darkness
@@ -470,12 +519,6 @@ void Simulation::setCellState(int cell, bool state) {
 }
 
 void Simulation::setLoadState(String load, bool state) {
-    // Ignore manual changes if auto toggle is enabled
-    if (autoToggleLoads) {
-        Serial.println("Auto toggle loads enabled - ignoring manual change");
-        return;
-    }
-    
     int index = -1;
     if (load == "light") index = 0;
     else if (load == "fridge") index = 1;
@@ -485,6 +528,12 @@ void Simulation::setLoadState(String load, bool state) {
     else if (load == "tv") index = 5;
     
     if (index >= 0) {
+        // Ignore manual changes if auto toggle is enabled
+        if (autoToggleLoads) {
+            Serial.println("Auto toggle loads enabled - ignoring manual change");
+            return;
+        }
+        
         loads[index] = state;
         Serial.print("Load ");
         Serial.print(load);
@@ -496,4 +545,10 @@ void Simulation::setAutoToggleLoads(bool enable) {
     autoToggleLoads = enable;
     Serial.print("Auto toggle loads: ");
     Serial.println(enable ? "ENABLED" : "DISABLED");
+}
+
+void Simulation::setCurrentMultiplier(float multiplier) {
+    currentMultiplier = multiplier;
+    Serial.print("Current multiplier set to: ");
+    Serial.println(multiplier);
 }

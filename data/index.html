@@ -186,18 +186,33 @@
             color: white;
         }
 
-        /* Load Buttons */
-        .load-btn {
+        /* Battery Buttons */
+        .battery-btn {
             border-color: #2196f3;
             color: #2196f3;
         }
 
-        .load-btn:hover {
+        .battery-btn:hover {
             box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
         }
 
-        .load-btn.active {
+        .battery-btn.active {
             background-color: #2196f3;
+            color: white;
+        }
+
+        /* Load Buttons */
+        .load-btn {
+            border-color: #f44336;
+            color: #f44336;
+        }
+
+        .load-btn:hover {
+            box-shadow: 0 4px 8px rgba(244, 67, 54, 0.3);
+        }
+
+        .load-btn.active {
+            background-color: #f44336;
             color: white;
         }
 
@@ -340,6 +355,26 @@
         }
 
         .nav-item.active {
+            color: #4caf50;
+            border-top-color: #4caf50;
+        }
+
+        .nav-item[data-page="modules"].active {
+            color: #4caf50;
+            border-top-color: #4caf50;
+        }
+
+        .nav-item[data-page="battery"].active {
+            color: #2196f3;
+            border-top-color: #2196f3;
+        }
+
+        .nav-item[data-page="load"].active {
+            color: #f44336;
+            border-top-color: #f44336;
+        }
+
+        .nav-item[data-page="settings"].active {
             color: #4caf50;
             border-top-color: #4caf50;
         }
@@ -584,6 +619,93 @@
             font-weight: 600;
             color: #e0e0e0;
         }
+
+        /* Action Button */
+        .action-btn {
+            background-color: #2196f3;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 20px;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .action-btn:hover {
+            background-color: #1976d2;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 6px rgba(33, 150, 243, 0.4);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .action-btn:disabled {
+            background-color: #555;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .action-btn:disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        /* Real Data Chart */
+        .realdata-chart-container {
+            background-color: #252525;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .realdata-chart-title {
+            font-size: 0.9rem;
+            color: #bbb;
+            margin-bottom: 10px;
+        }
+
+        .realdata-chart-container canvas {
+            width: 100%;
+            height: 150px;
+        }
+
+        .realdata-info {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .realdata-info-item {
+            flex: 1;
+            min-width: 120px;
+            background-color: #252525;
+            border-radius: 6px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .realdata-info-label {
+            font-size: 0.8rem;
+            color: #999;
+            margin-bottom: 5px;
+        }
+
+        .realdata-info-value {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .realdata-info-value.active {
+            color: #4caf50;
+        }
     </style>
 </head>
 <body>
@@ -639,28 +761,28 @@
         <!-- Battery Page -->
         <div id="batteryPage" class="page">
             <div class="card">
-                <div class="card-title">Battery Cells</div>
+                <div class="card-title">Battery Cells <span id="batterySocDisplay" style="color: #2196f3; font-size: 0.9rem;"></span></div>
                 <div class="button-group">
                     <div class="button-wrapper">
-                        <button class="toggle-btn active" data-cell="1">
+                        <button class="toggle-btn battery-btn active" data-cell="1">
                             <span>Cell 1</span>
                             <span class="button-spec">5 kWh</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="toggle-btn" data-cell="2">
+                        <button class="toggle-btn battery-btn" data-cell="2">
                             <span>Cell 2</span>
                             <span class="button-spec">5 kWh</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="toggle-btn" data-cell="3">
+                        <button class="toggle-btn battery-btn" data-cell="3">
                             <span>Cell 3</span>
                             <span class="button-spec">5 kWh</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="toggle-btn" data-cell="4">
+                        <button class="toggle-btn battery-btn" data-cell="4">
                             <span>Cell 4</span>
                             <span class="button-spec">5 kWh</span>
                         </button>
@@ -675,7 +797,7 @@
         <!-- Load Page -->
         <div id="loadPage" class="page">
             <div class="card">
-                <div class="card-title">Load Controls</div>
+                <div class="card-title">Load Controls <span id="loadDisplay" style="color: #f44336; font-size: 0.9rem;"></span></div>
                 <div class="button-group">
                     <div class="button-wrapper">
                         <button class="load-btn toggle-btn" data-load="light">
@@ -745,15 +867,16 @@
                     </label>
                 </div>
                 <div class="settings-row">
-                    <span class="settings-label">Show real data</span>
-                    <label class="switch">
-                        <input type="checkbox" id="showRealData">
-                        <span class="slider"></span>
-                    </label>
+                    <span class="settings-label">Show data</span>
+                    <button class="action-btn" id="showRealDataBtn">Show</button>
                 </div>
                 <div class="settings-row">
                     <span class="settings-label">Set simulation duration (in seconds per day)</span>
                     <input type="number" class="text-input" id="simDuration" value="24" min="1" max="3600" step="1">
+                </div>
+                <div class="settings-row">
+                    <span class="settings-label">Current multiplier</span>
+                    <input type="number" class="text-input" id="currentMultiplier" value="2000" min="1" max="10000" step="1">
                 </div>
             </div>
         </div>
@@ -778,6 +901,7 @@
             autoToggleLoads: false,  // Track auto toggle loads setting
             previousLoadStates: null,  // Track previous load states for logging
             loadLogInitialized: false,  // Track if initial log was written
+            lastSimulationData: null,  // Track last simulation data for timestamps
             chartData: {
                 modules: {voltage: [], current: []},
                 battery: {soc: []},
@@ -791,9 +915,9 @@
             height: 300,
             padding: {top: 25, right: 50, bottom: 35, left: 50},
             colors: {
-                voltage: '#ff9800',
+                voltage: '#4caf50',
                 current: '#03a9f4',
-                soc: '#4caf50',
+                soc: '#2196f3',
                 produced: '#4caf50',
                 consumed: '#f44336',
                 net: '#2196f3',
@@ -920,6 +1044,42 @@
                     const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
                     
+                    // Log manual load change only if simulation is running
+                    if (state.simulationRunning && state.lastSimulationData) {
+                        const loadName = loadType.charAt(0).toUpperCase() + loadType.slice(1);
+                        const status = newState ? 'ON' : 'OFF';
+                        const color = newState ? '#4caf50' : '#f44336';
+                        const logElement = document.getElementById('loadLog');
+                        
+                        const hour = state.lastSimulationData.hour || 0;
+                        const minute = state.lastSimulationData.minute || 0;
+                        let h = hour % 12;
+                        if (h === 0) h = 12;
+                        const ampm = hour < 12 ? 'am' : 'pm';
+                        const m = minute.toString().padStart(2, '0');
+                        const timeStr = `${h}:${m} ${ampm}`;
+                        
+                        const logEntry = `<div style="color: ${color}; margin-bottom: 3px;">
+                            <strong>${timeStr}</strong> - ${loadName} ${status}
+                        </div>`;
+                        
+                        // Initialize log if empty
+                        if (logElement.innerHTML.includes('Start simulation')) {
+                            logElement.innerHTML = logEntry;
+                        } else {
+                            logElement.innerHTML += logEntry;
+                        }
+                        
+                        // Auto-scroll to bottom
+                        logElement.scrollTop = logElement.scrollHeight;
+                        
+                        // Update state tracking
+                        if (!state.previousLoadStates) {
+                            state.previousLoadStates = {};
+                        }
+                        state.previousLoadStates[loadType] = newState;
+                    }
+                    
                     fetch('/simulation/load', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -946,6 +1106,33 @@
                     }
                 })
                 .catch(err => console.error('Failed to set auto toggle:', err));
+            });
+            
+            // Current Multiplier input
+            document.getElementById('currentMultiplier').addEventListener('change', function() {
+                const multiplier = parseFloat(this.value);
+                
+                fetch('/simulation/currentmultiplier', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `multiplier=${multiplier}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Current multiplier set to:', multiplier);
+                    }
+                })
+                .catch(err => console.error('Failed to set current multiplier:', err));
+            });
+            
+            // Show Data Button
+            document.getElementById('showRealDataBtn').addEventListener('click', function() {
+                if (state.simulationRunning) {
+                    alert('Cannot show real data while simulation is running');
+                    return;
+                }
+                showRealDataModal();
             });
         }
 
@@ -1030,6 +1217,7 @@
                     state.simulationRunning = true;
                     updatePlayStopButton();
                     disablePanelAndCellButtons();
+                    document.getElementById('showRealDataBtn').disabled = true;
                     startDataPolling();
                     console.log('Simulation started:', {simulateSun, duration, activePanels, activeCells});
                 }
@@ -1098,6 +1286,7 @@
             document.querySelectorAll('[data-panel], [data-cell]').forEach(btn => {
                 btn.classList.remove('disabled');
             });
+            document.getElementById('showRealDataBtn').disabled = false;
         }
         
         function updateLoadButtonsState() {
@@ -1208,6 +1397,9 @@
             fetch('/simulation/data')
             .then(response => response.json())
             .then(data => {
+                // Store last simulation data for manual load logging
+                state.lastSimulationData = data;
+                
                 updateChartsWithData(data);
                 updateTimeDisplay(data.hour, data.minute);
                 
@@ -1249,6 +1441,17 @@
                 state.chartData.load.produced[index] = data.powerGenerated || 0;
                 state.chartData.load.consumed[index] = data.powerLoad || 0;
                 state.chartData.load.net[index] = data.powerNet || 0;
+            }
+            
+            // Update live displays
+            const socDisplay = document.getElementById('batterySocDisplay');
+            if (socDisplay) {
+                socDisplay.textContent = `(${(data.batteryLevel || 0).toFixed(1)}%)`;
+            }
+            
+            const loadDisplay = document.getElementById('loadDisplay');
+            if (loadDisplay) {
+                loadDisplay.textContent = `(${(data.powerLoad || 0).toFixed(0)} W)`;
             }
             
             // Redraw charts
@@ -1613,6 +1816,61 @@
         function closeOverviewModal() {
             document.getElementById('overviewModal').classList.remove('active');
         }
+
+        // Real Data Modal Functions
+        let realDataInterval = null;
+
+        function showRealDataModal() {
+            // Get panel states from buttons
+            const panelStates = [1, 2, 3, 4].map(i => {
+                const btn = document.querySelector(`[data-panel="${i}"]`);
+                return btn && btn.classList.contains('active');
+            });
+
+            // Update panel status
+            panelStates.forEach((active, i) => {
+                const element = document.getElementById(`realPanel${i + 1}`);
+                if (active) {
+                    element.textContent = 'ON';
+                    element.classList.add('active');
+                } else {
+                    element.textContent = 'OFF';
+                    element.classList.remove('active');
+                }
+            });
+
+            // Start polling
+            fetchRealData(); // Fetch immediately
+            realDataInterval = setInterval(fetchRealData, 500); // Update every 500ms
+
+            // Show modal
+            document.getElementById('realDataModal').classList.add('active');
+        }
+
+        function closeRealDataModal() {
+            document.getElementById('realDataModal').classList.remove('active');
+            if (realDataInterval) {
+                clearInterval(realDataInterval);
+                realDataInterval = null;
+            }
+        }
+
+        function fetchRealData() {
+            fetch('/real/data')
+            .then(response => response.json())
+            .then(data => {
+                // Update voltage
+                document.getElementById('realVoltage').textContent = data.voltage.toFixed(2);
+                
+                // Update current
+                document.getElementById('realCurrent').textContent = data.current.toFixed(2);
+                
+                // Calculate and update power (V * I)
+                const power = (data.voltage * data.current) / 1000.0; // Convert mA to A
+                document.getElementById('realPower').textContent = power.toFixed(2);
+            })
+            .catch(err => console.error('Failed to fetch real data:', err));
+        }
     </script>
 
     <!-- Overview Modal -->
@@ -1670,3 +1928,48 @@
             </div>
         </div>
     </div>
+
+    <!-- Real Data Modal -->
+    <div id="realDataModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Real-Time Data</div>
+                <button class="modal-close" onclick="closeRealDataModal()">✕</button>
+            </div>
+            
+            <div class="realdata-info">
+                <div class="realdata-info-item">
+                    <div class="realdata-info-label">Panel 1</div>
+                    <div class="realdata-info-value" id="realPanel1">OFF</div>
+                </div>
+                <div class="realdata-info-item">
+                    <div class="realdata-info-label">Panel 2</div>
+                    <div class="realdata-info-value" id="realPanel2">OFF</div>
+                </div>
+                <div class="realdata-info-item">
+                    <div class="realdata-info-label">Panel 3</div>
+                    <div class="realdata-info-value" id="realPanel3">OFF</div>
+                </div>
+                <div class="realdata-info-item">
+                    <div class="realdata-info-label">Panel 4</div>
+                    <div class="realdata-info-value" id="realPanel4">OFF</div>
+                </div>
+            </div>
+            
+            <div class="realdata-chart-container">
+                <div class="realdata-chart-title">Bus Voltage</div>
+                <div style="font-size: 2.5rem; font-weight: 700; color: #4caf50; text-align: center; padding: 20px 0;">
+                    <span id="realVoltage">0.0</span> <span style="font-size: 1.5rem; color: #999;">V</span>
+                </div>
+            </div>
+            
+            <div class="realdata-chart-container">
+                <div class="realdata-chart-title">Current</div>
+                <div style="font-size: 2.5rem; font-weight: 700; color: #2196f3; text-align: center; padding: 20px 0;">
+                    <span id="realCurrent">0.0</span> <span style="font-size: 1.5rem; color: #999;">mA</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

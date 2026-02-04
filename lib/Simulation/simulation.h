@@ -2,6 +2,7 @@
 #define SIMULATION_H
 
 #include <Arduino.h>
+#include "ina.h"
 
 struct SimulationData {
     float voltage;          // V
@@ -17,7 +18,7 @@ struct SimulationData {
 
 class Simulation {
 public:
-    Simulation();
+    Simulation(INA* inaRef);
     void begin();
     
     // Control methods
@@ -27,6 +28,7 @@ public:
     bool isRunning();
     float getProgress();  // 0.0 to 1.0
     void setAutoToggleLoads(bool enable);  // Enable/disable auto toggle
+    void setCurrentMultiplier(float multiplier);  // Set calibration current multiplier
     
     // State setters
     void setPanelState(int panel, bool state);    // panel 1-4
@@ -39,6 +41,9 @@ public:
     String getOverviewJson();  // Get daily overview statistics
     
 private:
+    // INA219 reference for calibration mode
+    INA* ina;
+    
     // State arrays
     bool panels[4];
     bool cells[4];
@@ -49,6 +54,7 @@ private:
     bool running;
     bool simulateSun;
     bool autoToggleLoads;  // Auto toggle loads based on time
+    float currentMultiplier;  // Calibration multiplier for current
     unsigned long startTime;
     unsigned long lastUpdateTime;
     int durationSeconds;

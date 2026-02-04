@@ -41,7 +41,7 @@ void OLED::showBootScreen() {
     oledDisplay.display();
 }
 
-void OLED::showStatus(int t1, int t2, int t3, int t4, float busV, float shuntV, float currentMA, float powerMW, bool inaAvailable) {
+void OLED::showStatus(int panel1, int panel2, int panel3, int panel4, float voltage, float current, bool inaAvailable) {
     if (!found) return;
     
     oledDisplay.clearDisplay();
@@ -49,41 +49,33 @@ void OLED::showStatus(int t1, int t2, int t3, int t4, float busV, float shuntV, 
     oledDisplay.setTextColor(SSD1306_WHITE);
     oledDisplay.setCursor(0, 0);
     
-    oledDisplay.println("=== GPIO Status ===");
-    oledDisplay.print("T1:");
-    oledDisplay.print(t1 ? "AN" : "AUS");
-    oledDisplay.print(" T2:");
-    oledDisplay.println(t2 ? "AN" : "AUS");
-    oledDisplay.print("T3:");
-    oledDisplay.print(t3 ? "AN" : "AUS");
-    oledDisplay.print(" T4:");
-    oledDisplay.println(t4 ? "AN" : "AUS");
+    // Panel Status
+    oledDisplay.println("=== PANEL STATUS ===");
+    oledDisplay.print("P1:");
+    oledDisplay.print(panel1 ? "ON " : "OFF");
+    oledDisplay.print(" P2:");
+    oledDisplay.println(panel2 ? "ON " : "OFF");
+    oledDisplay.print("P3:");
+    oledDisplay.print(panel3 ? "ON " : "OFF");
+    oledDisplay.print(" P4:");
+    oledDisplay.println(panel4 ? "ON " : "OFF");
     
     if (inaAvailable) {
         oledDisplay.println("");
-        oledDisplay.println("=== INA219 ===");
+        oledDisplay.println("=== SENSOR DATA ===");
         
         // Werte unter 1 werden auf 0 gesetzt
-        if (busV < 1.0) busV = 0.0;
-        if (shuntV < 1.0) shuntV = 0.0;
-        if (currentMA < 1.0) currentMA = 0.0;
-        if (powerMW < 1.0) powerMW = 0.0;
+
+        if (current < 1.0) current = 0.0;
         
-        oledDisplay.print("Bus: ");
-        oledDisplay.print(busV, 2);
-        oledDisplay.println("V");
-        
-        oledDisplay.print("Shunt: ");
-        oledDisplay.print(shuntV, 2);
-        oledDisplay.println("mV");
-        
-        oledDisplay.print("Strom: ");
-        oledDisplay.print(currentMA, 2);
-        oledDisplay.println("mA");
-        
-        oledDisplay.print("Leistung: ");
-        oledDisplay.print(powerMW, 2);
-        oledDisplay.println("mW");
+
+        // Current
+        oledDisplay.print("Current: ");
+        oledDisplay.print(current, 1);
+        oledDisplay.println(" mA");
+    } else {
+        oledDisplay.println("");
+        oledDisplay.println("INA219 not found");
     }
     
     oledDisplay.display();

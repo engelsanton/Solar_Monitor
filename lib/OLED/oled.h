@@ -13,7 +13,7 @@ public:
     void clear();
     void display();
     void showBootScreen();
-    void showStatus(int t1, int t2, int t3, int t4, float busV, float shuntV, float currentMA, float powerMW, bool inaAvailable);
+    void showStatus(int panel1, int panel2, int panel3, int panel4, float voltage, float current, bool inaAvailable);
 
 private:
     Adafruit_SSD1306 oledDisplay;

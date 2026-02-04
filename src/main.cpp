@@ -11,7 +11,7 @@
 INA ina;
 OLED oled;
 Transistor transistor;
-Simulation simulation;
+Simulation simulation(&ina);
 WiFiManager wifiManager("Solar_Monitor", "12345678");
 WebServerManager webServer(&transistor, &simulation, &ina);
 
@@ -119,7 +119,7 @@ void loop() {
       transistor.getState2(), 
       transistor.getState3(), 
       transistor.getState4(),
-      busV, shuntV, currentMA, powerMW, 
+      busV, currentMA,
       ina219_found
     );
   } else {
