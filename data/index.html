@@ -26,7 +26,7 @@
             background-color: #1e1e1e;
             padding: 15px 20px;
             display: flex;
-            justify-content: center;
+            justify-content: space-between;
             align-items: center;
             border-bottom: 2px solid #2a2a2a;
             min-height: 60px;
@@ -35,6 +35,46 @@
         #header h1 {
             font-size: 1.2rem;
             font-weight: 600;
+            flex: 1;
+            text-align: center;
+        }
+
+        .header-time {
+            font-size: 1rem;
+            color: #e0e0e0;
+            font-weight: 500;
+            min-width: 70px;
+        }
+
+        .play-stop-btn {
+            min-width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .play-stop-btn.playing {
+            background-color: #4caf50;
+        }
+
+        .play-stop-btn.stopped {
+            background-color: #f44336;
+        }
+
+        .play-stop-btn:active {
+            transform: scale(0.95);
+        }
+
+        .play-stop-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
         }
 
         /* Main Content */
@@ -391,7 +431,13 @@
 <body>
     <!-- Header -->
     <div id="header">
+        <div class="header-time" id="headerTime">12 pm</div>
         <h1>Solar Monitor</h1>
+        <button class="play-stop-btn playing" id="playStopBtn">
+            <svg viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z"/>
+            </svg>
+        </button>
     </div>
 
     <!-- Main Content -->
@@ -572,6 +618,7 @@
     <script>
         const state = {
             currentPage: 'modules',
+            isPlaying: true,
             chartData: {
                 modules: {voltage: [], current: []},
                 battery: {soc: []},
@@ -637,6 +684,22 @@
         });
 
         function setupEventListeners() {
+            // Play/Stop Button
+            document.getElementById('playStopBtn').addEventListener('click', function() {
+                state.isPlaying = !state.isPlaying;
+                const btn = this;
+                
+                if (state.isPlaying) {
+                    btn.classList.remove('stopped');
+                    btn.classList.add('playing');
+                    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+                } else {
+                    btn.classList.remove('playing');
+                    btn.classList.add('stopped');
+                    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>';
+                }
+            });
+
             // Navigation
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.addEventListener('click', function() {
