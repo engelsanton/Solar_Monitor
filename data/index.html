@@ -438,6 +438,152 @@
                 min-height: 350px;
             }
         }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background-color: #1e1e1e;
+            border-radius: 12px;
+            padding: 25px;
+            max-width: 500px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9) translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #2a2a2a;
+            padding-bottom: 15px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: #4caf50;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: #e0e0e0;
+        }
+
+        .overview-section {
+            margin-bottom: 20px;
+        }
+
+        .overview-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid #2a2a2a;
+        }
+
+        .overview-stat:last-child {
+            border-bottom: none;
+        }
+
+        .overview-label {
+            font-size: 0.9rem;
+            color: #bbb;
+        }
+
+        .overview-value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #e0e0e0;
+        }
+
+        .overview-value.positive {
+            color: #4caf50;
+        }
+
+        .overview-value.negative {
+            color: #f44336;
+        }
+
+        .overview-highlight {
+            background-color: #252525;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .overview-highlight-label {
+            font-size: 0.85rem;
+            color: #bbb;
+            margin-bottom: 8px;
+        }
+
+        .overview-highlight-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #4caf50;
+        }
+
+        .overview-currency {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .overview-currency-item {
+            flex: 1;
+            text-align: center;
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .overview-currency-value {
+            font-weight: 600;
+            color: #e0e0e0;
+        }
     </style>
 </head>
 <body>
@@ -607,7 +753,7 @@
                 </div>
                 <div class="settings-row">
                     <span class="settings-label">Set simulation duration (in seconds per day)</span>
-                    <input type="number" class="text-input" id="simDuration" value="48" min="1" max="3600" step="1">
+                    <input type="number" class="text-input" id="simDuration" value="24" min="1" max="3600" step="1">
                 </div>
             </div>
         </div>
@@ -1079,6 +1225,11 @@
                     enablePanelAndCellButtons();
                     stopDataPolling();
                     console.log('Simulation completed automatically');
+                    
+                    // Show overview modal after a short delay
+                    setTimeout(() => {
+                        showOverviewModal();
+                    }, 500);
                 }
             })
             .catch(err => console.error('Failed to fetch simulation data:', err));
@@ -1431,6 +1582,91 @@
             
             svg.innerHTML = svgContent;
         }
+
+        // Overview Modal Functions
+        function showOverviewModal() {
+            fetch('/simulation/overview')
+            .then(response => response.json())
+            .then(data => {
+                // Update modal content
+                document.getElementById('overviewAutarky').textContent = data.autarky.toFixed(1) + '%';
+                document.getElementById('overviewEnergyFromGrid').textContent = data.energyFromGrid.toFixed(3) + ' kWh';
+                document.getElementById('overviewEnergyToGrid').textContent = data.energyToGrid.toFixed(3) + ' kWh';
+                document.getElementById('overviewTotalConsumption').textContent = data.energyConsumed.toFixed(3) + ' kWh';
+                
+                // Costs (ZAR primary, EUR secondary)
+                document.getElementById('overviewCostZAR').textContent = data.costZAR.toFixed(2) + ' ZAR';
+                document.getElementById('overviewCostEUR').textContent = '(' + data.costEUR.toFixed(2) + ' €)';
+                
+                // Revenue (ZAR primary, EUR secondary)
+                document.getElementById('overviewRevenueZAR').textContent = data.revenueZAR.toFixed(2) + ' ZAR';
+                document.getElementById('overviewRevenueEUR').textContent = '(' + data.revenueEUR.toFixed(2) + ' €)';
+                
+                // Show modal
+                document.getElementById('overviewModal').classList.add('active');
+            })
+            .catch(err => {
+                console.error('Failed to fetch overview data:', err);
+            });
+        }
+
+        function closeOverviewModal() {
+            document.getElementById('overviewModal').classList.remove('active');
+        }
     </script>
-</body>
-</html>
+
+    <!-- Overview Modal -->
+    <div id="overviewModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Daily Overview</div>
+                <button class="modal-close" onclick="closeOverviewModal()">×</button>
+            </div>
+            
+            <div class="overview-highlight">
+                <div class="overview-highlight-label">Autarky Level</div>
+                <div class="overview-highlight-value" id="overviewAutarky">--</div>
+            </div>
+            
+            <div class="overview-section">
+                <h3 style="color: #f44336; margin-bottom: 10px; font-size: 1rem;">Energy from Grid</h3>
+                <div class="overview-stat">
+                    <span class="overview-label">Energy drawn</span>
+                    <span class="overview-value" id="overviewEnergyFromGrid">--</span>
+                </div>
+                <div class="overview-stat">
+                    <span class="overview-label">Cost</span>
+                    <div style="text-align: right;">
+                        <div class="overview-value negative" id="overviewCostZAR">--</div>
+                        <div class="overview-currency">
+                            <span class="overview-currency-value" id="overviewCostEUR">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overview-section">
+                <h3 style="color: #4caf50; margin-bottom: 10px; font-size: 1rem;">Energy to Grid</h3>
+                <div class="overview-stat">
+                    <span class="overview-label">Energy fed in</span>
+                    <span class="overview-value" id="overviewEnergyToGrid">--</span>
+                </div>
+                <div class="overview-stat">
+                    <span class="overview-label">Revenue</span>
+                    <div style="text-align: right;">
+                        <div class="overview-value positive" id="overviewRevenueZAR">--</div>
+                        <div class="overview-currency">
+                            <span class="overview-currency-value" id="overviewRevenueEUR">--</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overview-section">
+                <div class="overview-stat">
+                    <span class="overview-label">Total consumption</span>
+                    <span class="overview-value" id="overviewTotalConsumption">--</span>
+                </div>
+            </div>
+        </div>
+    </div>

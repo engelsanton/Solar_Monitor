@@ -24,6 +24,7 @@ void WebServerManager::begin() {
     server.on("/simulation/cell", HTTP_POST, [this]() { this->handleSetCell(); });
     server.on("/simulation/load", HTTP_POST, [this]() { this->handleSetLoad(); });
     server.on("/simulation/autotoggle", HTTP_POST, [this]() { this->handleAutoToggleLoads(); });
+    server.on("/simulation/overview", HTTP_GET, [this]() { this->handleSimulationOverview(); });
     
     // Real data endpoint
     server.on("/real/data", HTTP_GET, [this]() { this->handleRealData(); });
@@ -109,6 +110,14 @@ void WebServerManager::handleGetStatus() {
     json += "}";
     
     server.sendHeader("Connection", "close");
+    server.send(200, "application/json", json);
+}
+
+void WebServerManager::handleSimulationOverview() {
+    String json = simulation->getOverviewJson();
+    
+    server.sendHeader("Connection", "close");
+    server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     server.send(200, "application/json", json);
 }
 

@@ -35,6 +35,11 @@ Simulation::Simulation() {
     activePanelsSnapshot = 0;
     activeCellsSnapshot = 0;
     
+    // Initialize energy tracking
+    totalEnergyFromGrid = 0.0;
+    totalEnergyToGrid = 0.0;
+    totalEnergyConsumed = 0.0;
+    
     // Initialize data
     currentData.voltage = 0.0;
     currentData.current = 0.0;
@@ -70,6 +75,11 @@ void Simulation::start(int durationSeconds, bool simulateSun) {
     for (int i = 0; i < 4; i++) {
         if (cells[i]) activeCellsSnapshot++;
     }
+    
+    // Reset energy tracking
+    totalEnergyFromGrid = 0.0;
+    totalEnergyToGrid = 0.0;
+    totalEnergyConsumed = 0.0;
     
     this->running = true;
     
@@ -293,6 +303,13 @@ void Simulation::calculateBattery(float deltaTimeSeconds) {
     // Energy change: ΔE = P_net * time (in hours)
     float deltaEnergyWh = currentData.powerNet * simulatedHours;
     
+    // Track energy consumption
+    float energyConsumedWh = currentData.powerLoad * simulatedHours;
+    totalEnergyConsumed += energyConsumedWh / 1000.0;  // Convert Wh to kWh
+    
+    // Track grid interaction (when battery can't handle the load/excess)
+    float oldSoC = currentData.batteryLevel;
+    
     // Apply charging efficiency (85% when charging)
     if (deltaEnergyWh > 0) {
         deltaEnergyWh *= 0.85;
@@ -307,6 +324,23 @@ void Simulation::calculateBattery(float deltaTimeSeconds) {
     // Clamp between 0 and 100
     if (currentData.batteryLevel < 0.0) currentData.batteryLevel = 0.0;
     if (currentData.batteryLevel > 100.0) currentData.batteryLevel = 100.0;
+    
+    // Track grid energy flow
+    // If we hit 0%, we needed grid power
+    if (oldSoC > 0.0 && currentData.batteryLevel == 0.0 && deltaEnergyWh < 0) {
+        // Calculate how much energy was missing
+        float missingSoC = 0.0 - (oldSoC + deltaSoC);
+        float missingEnergyWh = (missingSoC / 100.0) * batteryCapacityWh;
+        totalEnergyFromGrid += missingEnergyWh / 1000.0;  // Convert to kWh
+    }
+    
+    // If we hit 100%, excess went to grid
+    if (oldSoC < 100.0 && currentData.batteryLevel == 100.0 && deltaEnergyWh > 0) {
+        // Calculate excess energy
+        float excessSoC = (oldSoC + deltaSoC) - 100.0;
+        float excessEnergyWh = (excessSoC / 100.0) * batteryCapacityWh;
+        totalEnergyToGrid += excessEnergyWh / 1000.0;  // Convert to kWh
+    }
 }
 
 float Simulation::getSolarIrradiance(float hour) {
@@ -380,6 +414,34 @@ String Simulation::getDataAsJson() {
     json += "\"tv\":" + String(loads[5] ? "true" : "false");
     json += "},";
     json += "\"progress\":" + String(getProgress(), 3);
+    json += "}";
+    return json;
+}
+
+String Simulation::getOverviewJson() {
+    // Calculate autarky level (self-sufficiency)
+    float autarky = 0.0;
+    if (totalEnergyConsumed > 0.0) {
+        autarky = ((totalEnergyConsumed - totalEnergyFromGrid) / totalEnergyConsumed) * 100.0;
+        if (autarky < 0.0) autarky = 0.0;
+        if (autarky > 100.0) autarky = 100.0;
+    }
+    
+    // Calculate costs and revenue
+    float costZAR = totalEnergyFromGrid * 3.50;
+    float costEUR = totalEnergyFromGrid * 0.20;
+    float revenueZAR = totalEnergyToGrid * 1.17;
+    float revenueEUR = totalEnergyToGrid * 0.06;
+    
+    String json = "{";
+    json += "\"autarky\":" + String(autarky, 1) + ",";
+    json += "\"energyFromGrid\":" + String(totalEnergyFromGrid, 3) + ",";
+    json += "\"energyToGrid\":" + String(totalEnergyToGrid, 3) + ",";
+    json += "\"energyConsumed\":" + String(totalEnergyConsumed, 3) + ",";
+    json += "\"costZAR\":" + String(costZAR, 2) + ",";
+    json += "\"costEUR\":" + String(costEUR, 2) + ",";
+    json += "\"revenueZAR\":" + String(revenueZAR, 2) + ",";
+    json += "\"revenueEUR\":" + String(revenueEUR, 2);
     json += "}";
     return json;
 }

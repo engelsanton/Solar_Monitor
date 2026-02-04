@@ -29,6 +29,7 @@ private:
     void handleSetCell();
     void handleSetLoad();
     void handleAutoToggleLoads();
+    void handleSimulationOverview();
     void handleRealData();
     void handleNotFound();
 };

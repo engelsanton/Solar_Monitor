@@ -36,6 +36,7 @@ public:
     // Data getters
     SimulationData getCurrentData();
     String getDataAsJson();
+    String getOverviewJson();  // Get daily overview statistics
     
 private:
     // State arrays
@@ -57,6 +58,11 @@ private:
     // Simulation snapshot (fixed at start)
     int activePanelsSnapshot;  // Number of panels when simulation started
     int activeCellsSnapshot;   // Number of cells when simulation started
+    
+    // Energy tracking for daily overview
+    float totalEnergyFromGrid;    // kWh drawn from grid
+    float totalEnergyToGrid;      // kWh fed into grid
+    float totalEnergyConsumed;    // kWh total consumption
     
     // Current data
     SimulationData currentData;
