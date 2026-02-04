@@ -26,7 +26,7 @@
             background-color: #1e1e1e;
             padding: 15px 20px;
             display: flex;
-            justify-content: space-between;
+            justify-content: center;
             align-items: center;
             border-bottom: 2px solid #2a2a2a;
             min-height: 60px;
@@ -35,80 +35,6 @@
         #header h1 {
             font-size: 1.2rem;
             font-weight: 600;
-            flex: 1;
-        }
-
-        .time-celestial-container {
-            position: absolute;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-        }
-
-        .celestial-arc {
-            position: relative;
-            width: 50px;
-            height: 25px;
-        }
-
-        .arc-line {
-            stroke: transparent;
-            stroke-width: 1.5;
-            fill: none;
-        }
-
-        .celestial-icon {
-            position: absolute;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            box-shadow: 0 0 8px currentColor;
-            transition: opacity 0.5s ease, left 0.3s ease, top 0.3s ease;
-        }
-
-        .celestial-icon.sun {
-            background: #ffd700;
-            color: #ffd700;
-        }
-
-        .celestial-icon.moon {
-            background: #c0c0c0;
-            color: #c0c0c0;
-        }
-
-        .time-display {
-            font-size: 0.95rem;
-            font-weight: 600;
-            color: #ffffff;
-            text-align: center;
-        }
-
-        #simulateBtn {
-            padding: 8px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        #simulateBtn.simulate {
-            background-color: #4caf50;
-            color: white;
-        }
-
-        #simulateBtn.stop {
-            background-color: #f44336;
-            color: white;
-        }
-
-        #simulateBtn:hover {
-            opacity: 0.9;
-            transform: translateY(-1px);
         }
 
         /* Main Content */
@@ -134,14 +60,6 @@
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* Disabled state for buttons during simulation */
-        .toggle-btn:disabled,
-        .load-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
         }
 
         /* Cards */
@@ -224,157 +142,6 @@
             color: white;
         }
 
-        /* Display Values */
-        .display-value {
-            background: linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 100%);
-            padding: 25px;
-            border-radius: 10px;
-            text-align: center;
-            margin-bottom: 20px;
-            border: 2px solid #2a2a2a;
-        }
-
-        .display-value .label {
-            font-size: 0.9rem;
-            color: #999;
-            margin-bottom: 8px;
-        }
-
-        .display-value .value {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #4caf50;
-        }
-
-        /* Charts */
-        .chart-container {
-            background-color: #2a2a2a;
-            border-radius: 10px;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-
-        .chart-label {
-            font-size: 0.85rem;
-            color: #999;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-
-        canvas {
-            width: 100%;
-            height: 180px;
-            display: block;
-            border-radius: 6px;
-        }
-
-        /* Settings */
-        .setting-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-            border-bottom: 1px solid #2a2a2a;
-        }
-
-        .setting-row:last-child {
-            border-bottom: none;
-        }
-
-        .setting-label {
-            font-size: 1rem;
-            color: #e0e0e0;
-        }
-
-        /* Toggle Switch */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 26px;
-        }
-
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #555;
-            transition: 0.3s;
-            border-radius: 26px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 18px;
-            width: 18px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: 0.3s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider {
-            background-color: #4caf50;
-        }
-
-        input:checked + .slider:before {
-            transform: translateX(24px);
-        }
-
-        /* Input Field */
-        .input-group {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-
-        input[type="number"] {
-            background-color: #2a2a2a;
-            border: 2px solid #3a3a3a;
-            border-radius: 6px;
-            padding: 8px 12px;
-            color: #e0e0e0;
-            font-size: 0.95rem;
-            width: 100px;
-        }
-
-        input[type="number"]:focus {
-            outline: none;
-            border-color: #4caf50;
-        }
-
-        /* Action Button */
-        .action-btn {
-            background-color: #2196f3;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 24px;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 20px;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .action-btn:hover {
-            background-color: #1976d2;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.4);
-        }
-
         /* Bottom Navigation */
         #navigation {
             position: fixed;
@@ -424,10 +191,6 @@
             .button-group {
                 grid-template-columns: repeat(4, 1fr);
             }
-
-            canvas {
-                height: 200px;
-            }
         }
 
         @media (min-width: 1024px) {
@@ -441,11 +204,6 @@
                 font-size: 1rem;
             }
 
-            #simulateBtn {
-                padding: 6px 15px;
-                font-size: 0.85rem;
-            }
-
             .nav-item {
                 font-size: 0.75rem;
                 padding: 8px 5px;
@@ -457,16 +215,6 @@
     <!-- Header -->
     <div id="header">
         <h1>Solar Monitor</h1>
-        <div class="time-celestial-container">
-            <div class="celestial-arc">
-                <svg width="50" height="25" style="position: absolute; top: 0; left: 0;">
-                    <path class="arc-line" d="M 5,20 Q 25,8 45,20" />
-                </svg>
-                <div class="celestial-icon sun" id="celestialIcon"></div>
-            </div>
-            <div class="time-display" id="timeDisplay">06:00 AM</div>
-        </div>
-        <button id="simulateBtn" class="simulate">Simulate</button>
     </div>
 
     <!-- Main Content -->
@@ -502,21 +250,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="card">
-                <div class="chart-container">
-                    <div class="chart-label">Current (mA)</div>
-                    <canvas id="currentChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-label">Voltage (mV)</div>
-                    <canvas id="voltageChart"></canvas>
-                </div>
-                <div class="chart-container">
-                    <div class="chart-label">Power (mW)</div>
-                    <canvas id="powerChart"></canvas>
-                </div>
-            </div>
         </div>
 
         <!-- Battery Page -->
@@ -550,20 +283,6 @@
                     </div>
                 </div>
             </div>
-
-            <div class="card">
-                <div class="display-value">
-                    <div class="label">Battery Level</div>
-                    <div class="value" id="batteryLevel">0%</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="chart-container">
-                    <div class="chart-label">Battery Level History (%)</div>
-                    <canvas id="batteryChart"></canvas>
-                </div>
-            </div>
         </div>
 
         <!-- Load Page -->
@@ -572,67 +291,53 @@
                 <div class="card-title">Load Controls</div>
                 <div class="button-group">
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="light" data-watts="10">
+                        <button class="load-btn toggle-btn" data-load="light">
                             <span>Light</span>
                             <span class="button-spec">10 W</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="fridge" data-watts="150">
+                        <button class="load-btn toggle-btn" data-load="fridge">
                             <span>Fridge</span>
                             <span class="button-spec">150 W</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="ac" data-watts="2000">
+                        <button class="load-btn toggle-btn" data-load="ac">
                             <span>AC</span>
                             <span class="button-spec">2000 W</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="washing" data-watts="500">
+                        <button class="load-btn toggle-btn" data-load="washing">
                             <span>Washing</span>
                             <span class="button-spec">500 W</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="wallbox" data-watts="11000">
+                        <button class="load-btn toggle-btn" data-load="wallbox">
                             <span>Wallbox</span>
                             <span class="button-spec">11 kW</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="heatpump" data-watts="3000">
+                        <button class="load-btn toggle-btn" data-load="heatpump">
                             <span>Heat Pump</span>
                             <span class="button-spec">3 kW</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="dishwasher" data-watts="2000">
+                        <button class="load-btn toggle-btn" data-load="dishwasher">
                             <span>Dishwasher</span>
                             <span class="button-spec">2 kW</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="tv" data-watts="300">
+                        <button class="load-btn toggle-btn" data-load="tv">
                             <span>TV</span>
                             <span class="button-spec">300 W</span>
                         </button>
                     </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="display-value">
-                    <div class="label">Current Load</div>
-                    <div class="value" id="currentLoad">0 W</div>
-                </div>
-            </div>
-
-            <div class="card">
-                <div class="chart-container">
-                    <div class="chart-label">Load History (W)</div>
-                    <canvas id="loadChart"></canvas>
                 </div>
             </div>
         </div>
@@ -641,39 +346,7 @@
         <div id="settingsPage" class="page">
             <div class="card">
                 <div class="card-title">Settings</div>
-                
-                <div class="setting-row">
-                    <span class="setting-label">Show real data</span>
-                    <label class="switch">
-                        <input type="checkbox" id="showRealDataToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-row">
-                    <span class="setting-label">Simulate Sun</span>
-                    <label class="switch">
-                        <input type="checkbox" id="simulateSunToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-row">
-                    <span class="setting-label">Auto Toggle Loads</span>
-                    <label class="switch">
-                        <input type="checkbox" id="autoToggleLoadsToggle">
-                        <span class="slider"></span>
-                    </label>
-                </div>
-
-                <div class="setting-row">
-                    <span class="setting-label">Simulation Duration (seconds per day)</span>
-                    <div class="input-group">
-                        <input type="number" id="simDuration" value="48" min="1" max="999999">
-                    </div>
-                </div>
-
-                <button class="action-btn" id="systemCheckBtn">System Check</button>
+            
             </div>
         </div>
     </div>
@@ -687,80 +360,28 @@
     </div>
 
     <script>
-        // Global State - NO SIMULATION LOGIC HERE, only UI state
         const state = {
-            currentPage: 'modules',
-            dataHistory: {
-                current: [],
-                voltage: [],
-                power: [],
-                battery: [],
-                load: [],
-                timeLabels: [], // Uhrzeiten für X-Achse
-                hours: [] // Tatsächliche Stunden (0-24) für X-Position
-            },
-            maxDataPoints: 48, // 24 Stunden × 2 = alle 30 Minuten ein Punkt
-            updateInterval: null,
-            showRealData: false,
-            simulationRunning: false,
-            lastDatapointMinute: -30, // Track letzte gespeicherte Minute
-            autoToggleLoads: false,
-            lastAutoToggleHour: -1, // Track letzte Stunde für Auto-Toggle
-            simulateSun: false // Simuliere Sonnenintensität
+            currentPage: 'modules'
         };
 
-        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            initializeUI();
-            initializeCharts();
             setupEventListeners();
-        });
-
-        function initializeUI() {
-            showPage('modules');
             
-            // Initialisiere Standardzustände an ESP32 senden
-            // Panel 1 ist standardmäßig an
+            // Panel 1 und Cell 1 standardmäßig an
             fetch('/set', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                 body: 'transistor=1&state=1'
-            }).then(() => {
-                return fetch('/simulation/panel', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: 'panel=1&state=1'
-                });
-            }).then(() => {
-                // Cell 1 ist standardmäßig an
-                return fetch('/simulation/cell', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: 'cell=1&state=1'
-                });
-            }).then(() => {
-                console.log('Initial states synchronized');
-            }).catch(err => {
-                console.error('Error initializing states:', err);
             });
-        }
-
-        function initializeCharts() {
-            // Clear arrays (keine Initialisierung mit Nullen)
-            state.dataHistory.current = [];
-            state.dataHistory.voltage = [];
-            state.dataHistory.power = [];
-            state.dataHistory.battery = [];
-            state.dataHistory.load = [];
-            state.dataHistory.timeLabels = [];
-            state.dataHistory.hours = [];
-            drawAllCharts();
-        }
+            
+            fetch('/simulation/cell', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'cell=1&state=1'
+            });
+        });
 
         function setupEventListeners() {
-            // Simulate Button
-            document.getElementById('simulateBtn').addEventListener('click', toggleSimulation);
-
             // Navigation
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.addEventListener('click', function() {
@@ -768,41 +389,17 @@
                 });
             });
 
-            // Panel Buttons - Switch Transistors AND set simulation state
+            // Panel Buttons
             document.querySelectorAll('[data-panel]').forEach(btn => {
                 btn.addEventListener('click', function() {
                     const panelNum = parseInt(this.dataset.panel);
                     const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
                     
-                    console.log(`Panel ${panelNum} clicked, new state: ${newState}`);
-                    
-                    // Send to ESP32 - Transistor control (hardware)
                     fetch('/set', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                         body: `transistor=${panelNum}&state=${newState ? 1 : 0}`
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Transistor response:', data);
-                    })
-                    .catch(err => {
-                        console.error('Transistor error:', err);
-                    });
-                    
-                    // Send to ESP32 - Simulation state
-                    fetch('/simulation/panel', {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                        body: `panel=${panelNum}&state=${newState ? 1 : 0}`
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Simulation response:', data);
-                    })
-                    .catch(err => {
-                        console.error('Simulation error:', err);
                     });
                 });
             });
@@ -814,7 +411,6 @@
                     const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
                     
-                    // Send to ESP32
                     fetch('/simulation/cell', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -830,7 +426,6 @@
                     const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
                     
-                    // Send to ESP32
                     fetch('/simulation/load', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -838,484 +433,24 @@
                     });
                 });
             });
-
-            // System Check Button
-            document.getElementById('systemCheckBtn').addEventListener('click', function() {
-                alert('System OK');
-            });
-
-            // Show Real Data Toggle
-            document.getElementById('showRealDataToggle').addEventListener('change', function() {
-                state.showRealData = this.checked;
-                console.log('Show real data:', state.showRealData);
-                
-                // Reset data when switching
-                state.dataHistory.current = [];
-                state.dataHistory.voltage = [];
-                state.dataHistory.power = [];
-                state.dataHistory.battery = [];
-                state.dataHistory.load = [];
-                state.dataHistory.timeLabels = [];
-                state.dataHistory.hours = [];
-                state.lastDatapointMinute = -30;
-                drawAllCharts();
-            });
-
-            // Auto Toggle Loads
-            document.getElementById('autoToggleLoadsToggle').addEventListener('change', function() {
-                state.autoToggleLoads = this.checked;
-                console.log('Auto toggle loads:', state.autoToggleLoads);
-                
-                if (state.autoToggleLoads) {
-                    state.lastAutoToggleHour = -1; // Reset
-                }
-            });
-
-            // Simulate Sun Toggle
-            document.getElementById('simulateSunToggle').addEventListener('change', function() {
-                state.simulateSun = this.checked;
-                console.log('Simulate sun:', state.simulateSun);
-            });
         }
 
         function showPage(pageName) {
             state.currentPage = pageName;
 
-            // Hide all pages
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active');
             });
 
-            // Show selected page
             document.getElementById(pageName + 'Page').classList.add('active');
 
-            // Update navigation
             document.querySelectorAll('.nav-item').forEach(item => {
                 item.classList.remove('active');
                 if (item.dataset.page === pageName) {
                     item.classList.add('active');
                 }
             });
-
-            // Show/hide simulate button based on page
-            const simulateBtn = document.getElementById('simulateBtn');
-            if (pageName === 'settings') {
-                simulateBtn.style.visibility = 'hidden';
-            } else {
-                simulateBtn.style.visibility = 'visible';
-            }
         }
-
-        function toggleSimulation() {
-            const btn = document.getElementById('simulateBtn');
-            const isCurrentlyRunning = btn.classList.contains('stop');
-
-            if (!isCurrentlyRunning) {
-                // Start simulation - Clear old data
-                state.dataHistory.current = [];
-                state.dataHistory.voltage = [];
-                state.dataHistory.power = [];
-                state.dataHistory.battery = [];
-                state.dataHistory.load = [];
-                state.dataHistory.timeLabels = [];
-                state.dataHistory.hours = [];
-                state.lastDatapointMinute = -30;
-                
-                const duration = parseInt(document.getElementById('simDuration').value) || 30;
-                const simulateSun = state.simulateSun ? 1 : 0;
-                
-                fetch('/simulation', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: `action=start&duration=${duration}&simulateSun=${simulateSun}`
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        btn.textContent = 'Stop';
-                        btn.className = 'stop';
-                        disableButtons(true);
-                        state.simulationRunning = true;
-                        startDataPolling();
-                    }
-                });
-            } else {
-                // Stop simulation
-                fetch('/simulation', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                    body: 'action=stop'
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        btn.textContent = 'Simulate';
-                        btn.className = 'simulate';
-                        disableButtons(false);
-                        state.simulationRunning = false;
-                        stopDataPolling();
-                    }
-                });
-            }
-        }
-
-        function startDataPolling() {
-            // Poll data from ESP32 every 100ms
-            state.updateInterval = setInterval(fetchSimulationData, 100);
-        }
-
-        function stopDataPolling() {
-            if (state.updateInterval) {
-                clearInterval(state.updateInterval);
-                state.updateInterval = null;
-            }
-        }
-
-        function fetchSimulationData() {
-            const endpoint = state.showRealData ? '/real/data' : '/simulation/data';
-            
-            fetch(endpoint)
-                .then(response => response.json())
-                .then(data => {
-                    if (state.showRealData) {
-                        // Real INA219 data
-                        state.dataHistory.current.push(data.current);
-                        state.dataHistory.voltage.push(data.voltage);
-                        state.dataHistory.power.push(data.power);
-                        state.dataHistory.battery.push(0); // No battery in real data
-                        state.dataHistory.load.push(0);    // No load in real data
-                        state.dataHistory.timeLabels.push('');
-                        state.dataHistory.hours.push(0); // Kein Zeit-Tracking bei real data
-                        
-                        // Keep array size limited
-                        if (state.dataHistory.current.length > state.maxDataPoints) {
-                            state.dataHistory.current.shift();
-                            state.dataHistory.voltage.shift();
-                            state.dataHistory.power.shift();
-                            state.dataHistory.battery.shift();
-                            state.dataHistory.load.shift();
-                            state.dataHistory.timeLabels.shift();
-                            state.dataHistory.hours.shift();
-                        }
-                        
-                        // Update UI with real data (no time/celestial display)
-                        updateDisplayValues(0, 0);
-                        if (state.simulationRunning) {
-                            drawAllCharts();
-                        }
-                    } else {
-                        // Simulation data - Nur alle 30 Minuten einen Datenpunkt speichern
-                        const currentMinute = data.hour * 60 + data.minute; // Minuten seit Mitternacht
-                        
-                        // Prüfe ob wir einen neuen 30-Minuten-Schritt erreicht haben
-                        if (currentMinute - state.lastDatapointMinute >= 30 || state.lastDatapointMinute === -30) {
-                            let displayHour = data.hour % 12;
-                            if (displayHour === 0) displayHour = 12;
-                            const ampm = data.hour < 12 ? 'AM' : 'PM';
-                            const timeLabel = `${displayHour.toString().padStart(2, '0')}:${data.minute.toString().padStart(2, '0')} ${ampm}`;
-                            
-                            // Speichere tatsächliche Stunde mit Minuten als Dezimal (z.B. 13.5 für 13:30)
-                            const actualHour = data.hour + (data.minute / 60.0);
-                            
-                            state.dataHistory.current.push(data.current);
-                            state.dataHistory.voltage.push(data.voltage);
-                            state.dataHistory.power.push(data.power);
-                            state.dataHistory.battery.push(data.batteryLevel);
-                            state.dataHistory.load.push(data.load);
-                            state.dataHistory.timeLabels.push(timeLabel);
-                            state.dataHistory.hours.push(actualHour);
-                            
-                            state.lastDatapointMinute = currentMinute;
-                            
-                            // KEINE Begrenzung während Simulation - Punkte bleiben stehen!
-                        }
-
-                        // Update UI
-                        updateTimeDisplay(data.hour, data.minute, data.isDaytime);
-                        updateCelestialPosition(data.hour + data.minute / 60.0, data.isDaytime);
-                        updateDisplayValues(data.batteryLevel, data.load);
-                        
-                        // Auto Toggle Loads basierend auf Uhrzeit
-                        if (state.autoToggleLoads && data.hour !== state.lastAutoToggleHour) {
-                            autoToggleLoadsByTime(data.hour);
-                            state.lastAutoToggleHour = data.hour;
-                        }
-                        
-                        // Nur Diagramme aktualisieren wenn Simulation läuft
-                        if (state.simulationRunning) {
-                            drawAllCharts();
-                        }
-
-                        // Auto-stop if simulation is done
-                        if (!data.isRunning) {
-                            const btn = document.getElementById('simulateBtn');
-                            btn.textContent = 'Simulate';
-                            btn.className = 'simulate';
-                            disableButtons(false);
-                            state.simulationRunning = false;
-                            stopDataPolling();
-                        }
-                    }
-                })
-                .catch(err => console.error('Error fetching data:', err));
-        }
-
-        function updateTimeDisplay(hour, minute, isDaytime) {
-            let displayHour = hour % 12;
-            if (displayHour === 0) displayHour = 12;
-            const ampm = hour < 12 ? 'AM' : 'PM';
-            
-            const timeString = `${displayHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${ampm}`;
-            document.getElementById('timeDisplay').textContent = timeString;
-        }
-
-        function autoToggleLoadsByTime(hour) {
-            // Automatische Laststeuerung basierend auf Tageszeit
-            // light (0): 18-24 Uhr (Abends, ab Mitternacht aus)
-            // fridge (1): Immer an
-            // ac (2): 6-18 Uhr (Tag)
-            // washing (3): 18-21 Uhr (Abends)
-            // wallbox (4): 12-13 Uhr (Mittags 1h)
-            // heatpump (5): 18-6 Uhr (Nacht)
-            // dishwasher (6): 19-20 Uhr (Abends)
-            // tv (7): 18-22 Uhr (Abends)
-            
-            const loadStates = {
-                'light': (hour >= 18 && hour < 24),
-                'fridge': true, // Immer an
-                'ac': (hour >= 6 && hour < 18),
-                'washing': (hour >= 18 && hour < 21),
-                'wallbox': (hour >= 12 && hour < 13),
-                'heatpump': (hour >= 18 || hour < 6),
-                'dishwasher': (hour >= 19 && hour < 20),
-                'tv': (hour >= 18 && hour < 22)
-            };
-            
-            // Sende Updates an ESP32 und aktualisiere UI
-            for (const [loadName, shouldBeOn] of Object.entries(loadStates)) {
-                const btn = document.querySelector(`[data-load="${loadName}"]`);
-                if (btn) {
-                    const isCurrentlyOn = btn.classList.contains('active');
-                    
-                    if (isCurrentlyOn !== shouldBeOn) {
-                        // Toggle Button UI
-                        if (shouldBeOn) {
-                            btn.classList.add('active');
-                        } else {
-                            btn.classList.remove('active');
-                        }
-                        
-                        // Send to ESP32
-                        fetch('/simulation/load', {
-                            method: 'POST',
-                            headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: `load=${loadName}&state=${shouldBeOn ? 1 : 0}`
-                        });
-                    }
-                }
-            }
-        }
-
-        function updateCelestialPosition(hour, isDaytime) {
-            const celestialIcon = document.getElementById('celestialIcon');
-            const wasDay = celestialIcon.classList.contains('sun');
-            
-            // Zeitbasierte Animation:
-            // 0 Uhr: Mond in Mitte
-            // 0-6 Uhr: Mond wandert von Mitte nach rechts und geht unter
-            // 6 Uhr: Mond geht unter, Sonne geht links auf
-            // 6-18 Uhr: Sonne wandert von links über Mitte nach rechts und geht unter
-            // 18 Uhr: Sonne geht unter, Mond geht links auf
-            // 18-24 Uhr: Mond wandert von links zur Mitte
-            // 24 Uhr: Mond wieder in Mitte
-            
-            let progress, visible, shouldBeDay;
-            
-            if (hour < 6) {
-                // Nacht: 0-6 Uhr - Mond wandert von Mitte (0.5) nach rechts (1.0)
-                progress = 0.5 + (hour / 6) * 0.5; // 0.5 bis 1.0
-                visible = true;
-                shouldBeDay = false;
-            } else if (hour < 6.5) {
-                // Übergang: Mond verschwindet, Sonne erscheint
-                visible = false;
-                shouldBeDay = true;
-                progress = 0;
-            } else if (hour < 18) {
-                // Tag: 6-18 Uhr - Sonne wandert von links (0.0) nach rechts (1.0)
-                progress = (hour - 6) / 12; // 0 bis 1
-                visible = true;
-                shouldBeDay = true;
-            } else if (hour < 18.5) {
-                // Übergang: Sonne verschwindet, Mond erscheint
-                visible = false;
-                shouldBeDay = false;
-                progress = 0;
-            } else {
-                // Nacht: 18-24 Uhr - Mond wandert von links (0.0) zur Mitte (0.5)
-                progress = ((hour - 18) / 6) * 0.5; // 0 bis 0.5
-                visible = true;
-                shouldBeDay = false;
-            }
-            
-            // Position auf dem Bogen berechnen
-            const angle = progress * Math.PI;
-            const x = 25 + Math.cos(Math.PI - angle) * 20 - 6;
-            const y = 20 - Math.sin(angle) * 12 - 6;
-            
-            // Sonne/Mond Wechsel
-            if ((shouldBeDay && !wasDay) || (!shouldBeDay && wasDay)) {
-                celestialIcon.style.opacity = '0';
-                setTimeout(() => {
-                    celestialIcon.className = shouldBeDay ? 'celestial-icon sun' : 'celestial-icon moon';
-                    celestialIcon.style.left = x + 'px';
-                    celestialIcon.style.top = y + 'px';
-                    if (visible) {
-                        setTimeout(() => {
-                            celestialIcon.style.opacity = '1';
-                        }, 50);
-                    }
-                }, 250);
-            } else {
-                celestialIcon.style.left = x + 'px';
-                celestialIcon.style.top = y + 'px';
-                celestialIcon.style.opacity = visible ? '1' : '0';
-            }
-        }
-
-        function updateDisplayValues(batteryLevel, load) {
-            document.getElementById('batteryLevel').textContent = batteryLevel.toFixed(1) + '%';
-            document.getElementById('currentLoad').textContent = load.toFixed(0) + ' W';
-        }
-
-        function disableButtons(disable) {
-            document.querySelectorAll('[data-panel]').forEach(btn => {
-                btn.disabled = disable;
-            });
-            
-            document.querySelectorAll('[data-cell]').forEach(btn => {
-                btn.disabled = disable;
-            });
-            
-            // Loads: Disabled wenn Simulation läuft UND autoToggleLoads aktiv
-            document.querySelectorAll('[data-load]').forEach(btn => {
-                btn.disabled = disable && state.autoToggleLoads;
-            });
-        }
-
-        function drawAllCharts() {
-            drawChart('currentChart', state.dataHistory.current, '#ff9800', 'mA');
-            drawChart('voltageChart', state.dataHistory.voltage, '#2196f3', 'mV');
-            drawChart('powerChart', state.dataHistory.power, '#4caf50', 'mW');
-            drawChart('batteryChart', state.dataHistory.battery, '#9c27b0', '%');
-            drawChart('loadChart', state.dataHistory.load, '#f44336', 'W');
-        }
-
-        function drawChart(canvasId, dataArray, color, unit) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-
-            const ctx = canvas.getContext('2d');
-            const dpr = window.devicePixelRatio || 1;
-            const rect = canvas.getBoundingClientRect();
-
-            canvas.width = rect.width * dpr;
-            canvas.height = rect.height * dpr;
-            ctx.scale(dpr, dpr);
-
-            const width = rect.width;
-            const height = rect.height;
-
-            ctx.fillStyle = '#2a2a2a';
-            ctx.fillRect(0, 0, width, height);
-
-            if (dataArray.length === 0) return;
-
-            const maxValue = Math.max(...dataArray, 1);
-            const minValue = 0;  // Immer bei 0 starten
-            const range = maxValue || 1;
-
-            const padding = {
-                top: 20,
-                right: 50,
-                bottom: 30,
-                left: 10
-            };
-
-            const chartWidth = width - padding.left - padding.right;
-            const chartHeight = height - padding.top - padding.bottom;
-
-            // Grid lines
-            ctx.strokeStyle = '#3a3a3a';
-            ctx.lineWidth = 1;
-            for (let i = 0; i <= 4; i++) {
-                const y = padding.top + (chartHeight / 4) * i;
-                ctx.beginPath();
-                ctx.moveTo(padding.left, y);
-                ctx.lineTo(width - padding.right, y);
-                ctx.stroke();
-            }
-            
-            // Feste Zeit-Labels auf X-Achse von 00:00 bis 24:00 (24h-Bereich)
-            ctx.fillStyle = '#888';
-            ctx.font = '9px sans-serif';
-            ctx.textAlign = 'center';
-            
-            // Zeige Labels für alle 4 Stunden: 00:00, 04:00, 08:00, 12:00, 16:00, 20:00, 24:00
-            const timePoints = [
-                { hour: 0, label: '12:00 AM' },
-                { hour: 4, label: '04:00 AM' },
-                { hour: 8, label: '08:00 AM' },
-                { hour: 12, label: '12:00 PM' },
-                { hour: 16, label: '04:00 PM' },
-                { hour: 20, label: '08:00 PM' },
-                { hour: 24, label: '12:00 AM' }
-            ];
-            
-            timePoints.forEach(point => {
-                const progress = point.hour / 24;  // 0 bis 1
-                const x = padding.left + chartWidth * progress;
-                ctx.fillText(point.label, x, height - 5);
-            });
-
-            // Data line - Zeichne an tatsächlichen Zeitpositionen
-            ctx.strokeStyle = color;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-
-            dataArray.forEach((value, index) => {
-                // Position basierend auf tatsächlicher Stunde (0-24)
-                const hour = state.dataHistory.hours[index] || 0;
-                const timeProgress = hour / 24;  // 0 bis 1
-                const x = padding.left + chartWidth * timeProgress;
-                const normalizedValue = (value - minValue) / range;
-                const y = padding.top + chartHeight - (normalizedValue * chartHeight);
-
-                if (index === 0) {
-                    ctx.moveTo(x, y);
-                } else {
-                    ctx.lineTo(x, y);
-                }
-            });
-
-            ctx.stroke();
-
-            // Y-Achsen-Labels: MaxValue oben, 0 unten
-            const currentValue = dataArray[dataArray.length - 1] || 0;
-            ctx.fillStyle = '#e0e0e0';
-            ctx.font = '12px sans-serif';
-            ctx.textAlign = 'right';
-            
-            // MaxValue oben
-            ctx.fillText(maxValue.toFixed(0) + ' ' + unit, width - padding.right + 45, padding.top + 15);
-            // 0 unten
-            ctx.fillText('0 ' + unit, width - padding.right + 45, padding.top + chartHeight - 5);
-        }
-
-        // Handle window resize
-        window.addEventListener('resize', function() {
-            drawAllCharts();
-        });
     </script>
 </body>
 </html>
