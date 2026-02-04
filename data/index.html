@@ -60,11 +60,11 @@
         }
 
         .play-stop-btn.playing {
-            background-color: #4caf50;
+            background-color: #4caf50;  /* Green when stopped (shows play) */
         }
 
         .play-stop-btn.stopped {
-            background-color: #f44336;
+            background-color: #f44336;  /* Red when running (shows stop) */
         }
 
         .play-stop-btn:active {
@@ -160,6 +160,18 @@
 
         .toggle-btn:active {
             transform: scale(0.96);
+        }
+
+        .toggle-btn.disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            pointer-events: none;
+            filter: grayscale(0.3);
+        }
+
+        .toggle-btn.disabled:hover {
+            transform: none;
+            box-shadow: none;
         }
 
         @media (hover: hover) {
@@ -581,7 +593,7 @@
                 <div class="settings-row">
                     <span class="settings-label">Simulate Sun</span>
                     <label class="switch">
-                        <input type="checkbox" id="simulateSun">
+                        <input type="checkbox" id="simulateSun" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -618,7 +630,11 @@
     <script>
         const state = {
             currentPage: 'modules',
-            isPlaying: true,
+            isPlaying: false,
+            simulationRunning: false,
+            simulationDuration: 48,
+            pollingInterval: null,
+            activePanels: 1,  // Track active panels
             chartData: {
                 modules: {voltage: [], current: []},
                 battery: {soc: []},
@@ -664,6 +680,12 @@
                 body: 'transistor=1&state=1'
             });
             
+            fetch('/simulation/panel', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'panel=1&state=1'
+            });
+            
             fetch('/simulation/cell', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
@@ -686,17 +708,14 @@
         function setupEventListeners() {
             // Play/Stop Button
             document.getElementById('playStopBtn').addEventListener('click', function() {
-                state.isPlaying = !state.isPlaying;
                 const btn = this;
                 
                 if (state.isPlaying) {
-                    btn.classList.remove('stopped');
-                    btn.classList.add('playing');
-                    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+                    // Stop simulation
+                    stopSimulation();
                 } else {
-                    btn.classList.remove('playing');
-                    btn.classList.add('stopped');
-                    btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>';
+                    // Start simulation
+                    startSimulation();
                 }
             });
 
@@ -714,10 +733,21 @@
                     const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
                     
+                    // Update active panel count
+                    state.activePanels = document.querySelectorAll('[data-panel].active').length;
+                    
+                    // Set transistor state
                     fetch('/set', {
                         method: 'POST',
                         headers: {'Content-Type': 'application/x-www-form-urlencoded'},
                         body: `transistor=${panelNum}&state=${newState ? 1 : 0}`
+                    });
+                    
+                    // Set simulation panel state
+                    fetch('/simulation/panel', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                        body: `panel=${panelNum}&state=${newState ? 1 : 0}`
                     });
                 });
             });
@@ -771,19 +801,209 @@
         }
 
         function initializeCharts() {
-            // Initialize with 24 hours of data points (every 30 min = 48 points)
+            // Initialize with empty arrays (48 null values for 24h)
             for (let i = 0; i < 48; i++) {
-                state.chartData.modules.voltage.push(0);
-                state.chartData.modules.current.push(0);
-                state.chartData.battery.soc.push(0);
-                state.chartData.load.produced.push(0);
-                state.chartData.load.consumed.push(0);
-                state.chartData.load.net.push(0);
+                state.chartData.modules.voltage.push(null);
+                state.chartData.modules.current.push(null);
+                state.chartData.battery.soc.push(null);
+                state.chartData.load.produced.push(null);
+                state.chartData.load.consumed.push(null);
+                state.chartData.load.net.push(null);
             }
             
             drawModulesChart();
             drawBatteryChart();
             drawLoadChart();
+        }
+
+        function startSimulation() {
+            // Check active panels and cells
+            const activePanels = document.querySelectorAll('[data-panel].active').length;
+            const activeCells = document.querySelectorAll('[data-cell].active').length;
+            
+            console.log('Starting simulation with:');
+            console.log('- Active Panels:', activePanels);
+            console.log('- Active Cells:', activeCells);
+            
+            // Optional: Show warning if no panels or cells active
+            if (activePanels === 0 && activeCells === 0) {
+                console.warn('Warning: No panels or cells active!');
+            } else if (activePanels === 0) {
+                console.warn('Warning: No panels active - no solar generation!');
+            } else if (activeCells === 0) {
+                console.warn('Warning: No cells active - no battery storage!');
+            }
+            
+            // Update state
+            state.activePanels = activePanels;
+            
+            const simulateSun = document.getElementById('simulateSun').checked;
+            const duration = parseInt(document.getElementById('simDuration').value) || 48;
+            
+            // Store duration for time rounding
+            state.simulationDuration = duration;
+            
+            // Clear all chart data before starting
+            clearChartData();
+            
+            fetch('/simulation', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: `action=start&simulateSun=${simulateSun ? 1 : 0}&duration=${duration}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    state.isPlaying = true;
+                    state.simulationRunning = true;
+                    updatePlayStopButton();
+                    disablePanelAndCellButtons();
+                    startDataPolling();
+                    console.log('Simulation started:', {simulateSun, duration, activePanels, activeCells});
+                }
+            })
+            .catch(err => console.error('Failed to start simulation:', err));
+        }
+
+        function clearChartData() {
+            // Reset all data points to null (empty)
+            for (let i = 0; i < 48; i++) {
+                state.chartData.modules.voltage[i] = null;
+                state.chartData.modules.current[i] = null;
+                state.chartData.battery.soc[i] = null;
+                state.chartData.load.produced[i] = null;
+                state.chartData.load.consumed[i] = null;
+                state.chartData.load.net[i] = null;
+            }
+            // Redraw empty charts
+            drawModulesChart();
+            drawBatteryChart();
+            drawLoadChart();
+        }
+
+        function stopSimulation() {
+            fetch('/simulation', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'action=stop'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    state.isPlaying = false;
+                    state.simulationRunning = false;
+                    updatePlayStopButton();
+                    enablePanelAndCellButtons();
+                    stopDataPolling();
+                    console.log('Simulation stopped');
+                }
+            })
+            .catch(err => console.error('Failed to stop simulation:', err));
+        }
+
+        function updatePlayStopButton() {
+            const btn = document.getElementById('playStopBtn');
+            if (state.isPlaying) {
+                // Running: show red button with stop icon
+                btn.classList.remove('playing');
+                btn.classList.add('stopped');
+                btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M6 6h12v12H6z"/></svg>';
+            } else {
+                // Stopped: show green button with play icon
+                btn.classList.remove('stopped');
+                btn.classList.add('playing');
+                btn.innerHTML = '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+            }
+        }
+        
+        function disablePanelAndCellButtons() {
+            document.querySelectorAll('[data-panel], [data-cell]').forEach(btn => {
+                btn.classList.add('disabled');
+            });
+        }
+        
+        function enablePanelAndCellButtons() {
+            document.querySelectorAll('[data-panel], [data-cell]').forEach(btn => {
+                btn.classList.remove('disabled');
+            });
+        }
+
+        function startDataPolling() {
+            if (state.pollingInterval) return; // Already polling
+            
+            // Poll every 500ms for smooth updates
+            state.pollingInterval = setInterval(fetchSimulationData, 500);
+            fetchSimulationData(); // Fetch immediately
+        }
+
+        function stopDataPolling() {
+            if (state.pollingInterval) {
+                clearInterval(state.pollingInterval);
+                state.pollingInterval = null;
+            }
+        }
+
+        function fetchSimulationData() {
+            fetch('/simulation/data')
+            .then(response => response.json())
+            .then(data => {
+                updateChartsWithData(data);
+                updateTimeDisplay(data.hour, data.minute);
+                
+                // Auto-stop if simulation ended
+                if (!data.isRunning && state.simulationRunning) {
+                    state.isPlaying = false;
+                    state.simulationRunning = false;
+                    updatePlayStopButton();
+                    enablePanelAndCellButtons();
+                    stopDataPolling();
+                    console.log('Simulation completed automatically');
+                }
+            })
+            .catch(err => console.error('Failed to fetch simulation data:', err));
+        }
+
+        function updateChartsWithData(data) {
+            // Calculate array index based on simulation time
+            // 24 hours = 48 data points (one every 30 minutes)
+            // hour 0.0 = index 0, hour 0.5 = index 1, hour 1.0 = index 2, etc.
+            const simHour = data.hour + (data.minute / 60.0);
+            const index = Math.floor(simHour * 2); // 2 points per hour
+            
+            if (index >= 0 && index < 48) {
+                state.chartData.modules.voltage[index] = data.voltage || 0;
+                state.chartData.modules.current[index] = data.current || 0;
+                state.chartData.battery.soc[index] = data.batteryLevel || 0;
+                state.chartData.load.produced[index] = data.powerGenerated || 0;
+                state.chartData.load.consumed[index] = data.powerLoad || 0;
+                state.chartData.load.net[index] = data.powerNet || 0;
+            }
+            
+            // Redraw charts
+            drawModulesChart();
+            drawBatteryChart();
+            drawLoadChart();
+        }
+
+        function updateTimeDisplay(hour, minute) {
+            // Calculate time step size in hours (24h / duration)
+            const hoursPerStep = 24.0 / state.simulationDuration;
+            
+            // Convert hour+minute to decimal hours
+            const currentHours = hour + (minute / 60.0);
+            
+            // Round to nearest step
+            const roundedHours = Math.round(currentHours / hoursPerStep) * hoursPerStep;
+            
+            // Convert back to hour and minute
+            const displayHour = Math.floor(roundedHours) % 24;
+            const displayMinute = Math.round((roundedHours - Math.floor(roundedHours)) * 60);
+            
+            let h = displayHour % 12;
+            if (h === 0) h = 12;  // 0 hours = 12am, 12 hours = 12pm
+            const ampm = displayHour < 12 ? 'am' : 'pm';
+            const m = displayMinute.toString().padStart(2, '0');
+            document.getElementById('headerTime').textContent = `${h}:${m} ${ampm}`;
         }
 
         function getNiceScale(min, max) {
@@ -826,54 +1046,81 @@
             const voltageData = state.chartData.modules.voltage;
             const currentData = state.chartData.modules.current;
             
-            const voltageScale = getNiceScale(Math.min(...voltageData), Math.max(...voltageData));
-            const currentScale = getNiceScale(Math.min(...currentData), Math.max(...currentData));
+            // Fixed scales
+            const voltageMin = 0;
+            const voltageMax = 200;  // 200V
+            const currentMin = 0;
+            const currentMax = state.activePanels * 15;  // 15A per panel
             
             let svgContent = `<rect width="${c.width}" height="${c.height}" fill="#1e1e1e"/>`;
             
-            // Grid and axes
-            const numGridLines = Math.ceil((voltageScale.max - voltageScale.min) / voltageScale.step);
-            for (let i = 0; i <= numGridLines; i++) {
-                const y = c.padding.top + chartHeight - (i / numGridLines * chartHeight);
+            // Left Y-axis grid and labels (Voltage: 0-2000V)
+            for (let i = 0; i <= 10; i++) {
+                const y = c.padding.top + chartHeight - (i / 10 * chartHeight);
                 svgContent += `<line x1="${c.padding.left}" y1="${y}" x2="${c.width - c.padding.right}" y2="${y}" stroke="${c.colors.grid}" stroke-width="1" opacity="0.3"/>`;
-                const voltageLabel = (voltageScale.min + i * voltageScale.step).toFixed(1);
-                svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${voltageLabel}${voltageScale.unit}V</text>`;
+                const voltageLabel = (voltageMin + (i / 10) * (voltageMax - voltageMin)).toFixed(0);
+                svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${voltageLabel}V</text>`;
             }
             
-            // Right Y-axis (current)
-            for (let i = 0; i <= numGridLines; i++) {
-                const y = c.padding.top + chartHeight - (i / numGridLines * chartHeight);
-                const currentLabel = (currentScale.min + i * currentScale.step).toFixed(1);
-                svgContent += `<text x="${c.width - c.padding.right + 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="start">${currentLabel}${currentScale.unit}A</text>`;
+            // Right Y-axis labels (Current: 0 to activePanels×8A)
+            for (let i = 0; i <= 10; i++) {
+                const y = c.padding.top + chartHeight - (i / 10 * chartHeight);
+                const currentLabel = (currentMin + (i / 10) * (currentMax - currentMin)).toFixed(1);
+                svgContent += `<text x="${c.width - c.padding.right + 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="start">${currentLabel}A</text>`;
             }
             
-            // X-axis (time labels)
-            for (let h = 0; h <= 24; h += 4) {
-                const x = c.padding.left + (h / 24) * chartWidth;
-                const label = h.toString().padStart(2, '0') + ':00';
-                svgContent += `<text x="${x}" y="${c.height - 10}" fill="${c.colors.text}" font-size="11" text-anchor="middle">${label}</text>`;
-            }
+            // X-axis (time labels - only 4 points)
+            const timeLabels = [
+                {hour: 0, label: '12am'},
+                {hour: 8, label: '8am'},
+                {hour: 16, label: '4pm'},
+                {hour: 24, label: '12am'}
+            ];
+            timeLabels.forEach(t => {
+                const x = c.padding.left + (t.hour / 24) * chartWidth;
+                svgContent += `<text x="${x}" y="${c.height - 10}" fill="${c.colors.text}" font-size="11" text-anchor="middle">${t.label}</text>`;
+            });
             
             // Draw voltage line (only if data exists)
-            if (voltageData.some(v => v !== 0)) {
-                let voltagePath = `M ${c.padding.left} `;
+            if (voltageData.some(v => v !== null)) {
+                let voltagePath = '';
+                let pathStarted = false;
                 voltageData.forEach((v, i) => {
-                    const x = c.padding.left + (i / (voltageData.length - 1)) * chartWidth;
-                    const y = c.padding.top + chartHeight - ((v - voltageScale.realMin) / (voltageScale.realMax - voltageScale.realMin)) * chartHeight;
-                    voltagePath += i === 0 ? `${y} ` : `L ${x} ${y} `;
+                    if (v !== null) {
+                        const x = c.padding.left + (i / (voltageData.length - 1)) * chartWidth;
+                        const y = c.padding.top + chartHeight - ((v - voltageMin) / (voltageMax - voltageMin)) * chartHeight;
+                        if (!pathStarted) {
+                            voltagePath += `M ${x} ${y} `;
+                            pathStarted = true;
+                        } else {
+                            voltagePath += `L ${x} ${y} `;
+                        }
+                    }
                 });
-                svgContent += `<path d="${voltagePath}" fill="none" stroke="${c.colors.voltage}" stroke-width="2"/>`;
+                if (pathStarted) {
+                    svgContent += `<path d="${voltagePath}" fill="none" stroke="${c.colors.voltage}" stroke-width="2"/>`;
+                }
             }
             
             // Draw current line (only if data exists)
-            if (currentData.some(v => v !== 0)) {
-                let currentPath = `M ${c.padding.left} `;
+            if (currentData.some(v => v !== null)) {
+                let currentPath = '';
+                let pathStarted = false;
                 currentData.forEach((v, i) => {
-                    const x = c.padding.left + (i / (currentData.length - 1)) * chartWidth;
-                    const y = c.padding.top + chartHeight - ((v - currentScale.realMin) / (currentScale.realMax - currentScale.realMin)) * chartHeight;
-                    currentPath += i === 0 ? `${y} ` : `L ${x} ${y} `;
+                    if (v !== null) {
+                        const x = c.padding.left + (i / (currentData.length - 1)) * chartWidth;
+                        const y = c.padding.top + chartHeight - ((v - currentMin) / (currentMax - currentMin)) * chartHeight;
+                        if (!pathStarted) {
+                            currentPath += `M ${x} ${y} `;
+                            pathStarted = true;
+                        } else {
+                            currentPath += `L ${x} ${y} `;
+                        }
+                    }
                 });
-                svgContent += `<path d="${currentPath}" fill="none" stroke="${c.colors.current}" stroke-width="2"/>`;
+                if (pathStarted) {
+                    svgContent += `<path d="${currentPath}" fill="none" stroke="${c.colors.current}" stroke-width="2"/>`;
+                }
             }
             
             // Legend
@@ -904,22 +1151,37 @@
                 svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${i * 10}%</text>`;
             }
             
-            // X-axis
-            for (let h = 0; h <= 24; h += 4) {
-                const x = c.padding.left + (h / 24) * chartWidth;
-                const label = h.toString().padStart(2, '0') + ':00';
-                svgContent += `<text x="${x}" y="${c.height - 10}" fill="${c.colors.text}" font-size="11" text-anchor="middle">${label}</text>`;
-            }
+            // X-axis (time labels - only 4 points)
+            const timeLabels = [
+                {hour: 0, label: '12am'},
+                {hour: 8, label: '8am'},
+                {hour: 16, label: '4pm'},
+                {hour: 24, label: '12am'}
+            ];
+            timeLabels.forEach(t => {
+                const x = c.padding.left + (t.hour / 24) * chartWidth;
+                svgContent += `<text x="${x}" y="${c.height - 10}" fill="${c.colors.text}" font-size="11" text-anchor="middle">${t.label}</text>`;
+            });
             
             // Draw SoC line (only if data exists)
-            if (socData.some(v => v !== 0)) {
-                let socPath = `M ${c.padding.left} `;
+            if (socData.some(v => v !== null)) {
+                let socPath = '';
+                let pathStarted = false;
                 socData.forEach((v, i) => {
-                    const x = c.padding.left + (i / (socData.length - 1)) * chartWidth;
-                    const y = c.padding.top + chartHeight - (v / 100) * chartHeight;
-                    socPath += i === 0 ? `${y} ` : `L ${x} ${y} `;
+                    if (v !== null) {
+                        const x = c.padding.left + (i / (socData.length - 1)) * chartWidth;
+                        const y = c.padding.top + chartHeight - (v / 100) * chartHeight;
+                        if (!pathStarted) {
+                            socPath += `M ${x} ${y} `;
+                            pathStarted = true;
+                        } else {
+                            socPath += `L ${x} ${y} `;
+                        }
+                    }
                 });
-                svgContent += `<path d="${socPath}" fill="none" stroke="${c.colors.soc}" stroke-width="2"/>`;
+                if (pathStarted) {
+                    svgContent += `<path d="${socPath}" fill="none" stroke="${c.colors.soc}" stroke-width="2"/>`;
+                }
             }
             
             // Legend
@@ -941,58 +1203,101 @@
             const consumedData = state.chartData.load.consumed;
             const netData = state.chartData.load.net;
             
+            // Fixed Y-axis: minimum = activePanels × 5kW
             const allData = [...producedData, ...consumedData, ...netData];
-            const scale = getNiceScale(Math.min(...allData), Math.max(...allData));
+            const dataMax = Math.max(...allData);
+            const dataMin = Math.min(...allData);
+            
+            const minScale = state.activePanels * 5000;  // activePanels × 5kW
+            const maxScale = Math.max(dataMax, minScale);
+            const minScaleAdjusted = Math.min(dataMin, 0);  // Allow negative for net power
             
             let svgContent = `<rect width="${c.width}" height="${c.height}" fill="#1e1e1e"/>`;
             
             // Grid and Y-axis
-            const numGridLines = Math.ceil((scale.max - scale.min) / scale.step);
+            const yRange = maxScale - minScaleAdjusted;
+            const numGridLines = 10;
             for (let i = 0; i <= numGridLines; i++) {
                 const y = c.padding.top + chartHeight - (i / numGridLines * chartHeight);
                 svgContent += `<line x1="${c.padding.left}" y1="${y}" x2="${c.width - c.padding.right}" y2="${y}" stroke="${c.colors.grid}" stroke-width="1" opacity="0.3"/>`;
-                const label = (scale.min + i * scale.step).toFixed(1);
-                svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${label}${scale.unit}W</text>`;
+                const label = (minScaleAdjusted + (i / numGridLines) * yRange);
+                const labelText = label >= 1000 ? (label / 1000).toFixed(1) + 'k' : label.toFixed(0);
+                svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${labelText}W</text>`;
             }
             
-            // X-axis
-            for (let h = 0; h <= 24; h += 4) {
-                const x = c.padding.left + (h / 24) * chartWidth;
-                const label = h.toString().padStart(2, '0') + ':00';
-                svgContent += `<text x="${x}" y="${c.height - 10}" fill="${c.colors.text}" font-size="11" text-anchor="middle">${label}</text>`;
-            }
+            // X-axis (time labels - only 4 points)
+            const timeLabels3 = [
+                {hour: 0, label: '12am'},
+                {hour: 8, label: '8am'},
+                {hour: 16, label: '4pm'},
+                {hour: 24, label: '12am'}
+            ];
+            timeLabels3.forEach(t => {
+                const x = c.padding.left + (t.hour / 24) * chartWidth;
+                svgContent += `<text x="${x}" y="${c.height - 10}" fill="${c.colors.text}" font-size="11" text-anchor="middle">${t.label}</text>`;
+            });
             
             // Draw produced line (only if data exists)
-            if (producedData.some(v => v !== 0)) {
-                let producedPath = `M ${c.padding.left} `;
+            if (producedData.some(v => v !== null)) {
+                let producedPath = '';
+                let pathStarted = false;
                 producedData.forEach((v, i) => {
-                    const x = c.padding.left + (i / (producedData.length - 1)) * chartWidth;
-                    const y = c.padding.top + chartHeight - ((v - scale.realMin) / (scale.realMax - scale.realMin)) * chartHeight;
-                    producedPath += i === 0 ? `${y} ` : `L ${x} ${y} `;
+                    if (v !== null) {
+                        const x = c.padding.left + (i / (producedData.length - 1)) * chartWidth;
+                        const y = c.padding.top + chartHeight - ((v - minScaleAdjusted) / yRange) * chartHeight;
+                        if (!pathStarted) {
+                            producedPath += `M ${x} ${y} `;
+                            pathStarted = true;
+                        } else {
+                            producedPath += `L ${x} ${y} `;
+                        }
+                    }
                 });
-                svgContent += `<path d="${producedPath}" fill="none" stroke="${c.colors.produced}" stroke-width="2"/>`;
+                if (pathStarted) {
+                    svgContent += `<path d="${producedPath}" fill="none" stroke="${c.colors.produced}" stroke-width="2"/>`;
+                }
             }
             
             // Draw consumed line (only if data exists)
-            if (consumedData.some(v => v !== 0)) {
-                let consumedPath = `M ${c.padding.left} `;
+            if (consumedData.some(v => v !== null)) {
+                let consumedPath = '';
+                let pathStarted = false;
                 consumedData.forEach((v, i) => {
-                    const x = c.padding.left + (i / (consumedData.length - 1)) * chartWidth;
-                    const y = c.padding.top + chartHeight - ((v - scale.realMin) / (scale.realMax - scale.realMin)) * chartHeight;
-                    consumedPath += i === 0 ? `${y} ` : `L ${x} ${y} `;
+                    if (v !== null) {
+                        const x = c.padding.left + (i / (consumedData.length - 1)) * chartWidth;
+                        const y = c.padding.top + chartHeight - ((v - minScaleAdjusted) / yRange) * chartHeight;
+                        if (!pathStarted) {
+                            consumedPath += `M ${x} ${y} `;
+                            pathStarted = true;
+                        } else {
+                            consumedPath += `L ${x} ${y} `;
+                        }
+                    }
                 });
-                svgContent += `<path d="${consumedPath}" fill="none" stroke="${c.colors.consumed}" stroke-width="2"/>`;
+                if (pathStarted) {
+                    svgContent += `<path d="${consumedPath}" fill="none" stroke="${c.colors.consumed}" stroke-width="2"/>`;
+                }
             }
             
             // Draw net line (only if data exists)
-            if (netData.some(v => v !== 0)) {
-                let netPath = `M ${c.padding.left} `;
+            if (netData.some(v => v !== null)) {
+                let netPath = '';
+                let pathStarted = false;
                 netData.forEach((v, i) => {
-                    const x = c.padding.left + (i / (netData.length - 1)) * chartWidth;
-                    const y = c.padding.top + chartHeight - ((v - scale.realMin) / (scale.realMax - scale.realMin)) * chartHeight;
-                    netPath += i === 0 ? `${y} ` : `L ${x} ${y} `;
+                    if (v !== null) {
+                        const x = c.padding.left + (i / (netData.length - 1)) * chartWidth;
+                        const y = c.padding.top + chartHeight - ((v - minScaleAdjusted) / yRange) * chartHeight;
+                        if (!pathStarted) {
+                            netPath += `M ${x} ${y} `;
+                            pathStarted = true;
+                        } else {
+                            netPath += `L ${x} ${y} `;
+                        }
+                    }
                 });
-                svgContent += `<path d="${netPath}" fill="none" stroke="${c.colors.net}" stroke-width="2"/>`;
+                if (pathStarted) {
+                    svgContent += `<path d="${netPath}" fill="none" stroke="${c.colors.net}" stroke-width="2"/>`;
+                }
             }
             
             // Legend

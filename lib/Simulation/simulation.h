@@ -2,57 +2,70 @@
 #define SIMULATION_H
 
 #include <Arduino.h>
-#include "ina.h"
 
 struct SimulationData {
-    float current;
-    float voltage;
-    float power;
-    float batteryLevel;
-    float load;
-    int hour;
-    int minute;
-    bool isDaytime;
+    float voltage;          // V
+    float current;          // A
+    float powerGenerated;   // W
+    float powerLoad;        // W
+    float powerNet;         // W
+    float batteryLevel;     // %
+    int hour;               // 0-23
+    int minute;             // 0-59
+    float irradiance;       // 0-1 (fraction of max)
 };
 
 class Simulation {
 public:
     Simulation();
     void begin();
-    void start(int durationSeconds, bool simulateSun = false);
+    
+    // Control methods
+    void start(int durationSeconds, bool simulateSun);
     void stop();
     void update();
     bool isRunning();
+    float getProgress();  // 0.0 to 1.0
+    
+    // State setters
+    void setPanelState(int panel, bool state);    // panel 1-4
+    void setCellState(int cell, bool state);      // cell 1-4
+    void setLoadState(String load, bool state);   // load types
+    
+    // Data getters
     SimulationData getCurrentData();
     String getDataAsJson();
-    float getProgress(); // 0.0 bis 1.0
-    
-    void setPanelState(int panel, bool state); // panel 1-4
-    void setCellState(int cell, bool state);   // cell 1-4
-    void setLoadState(String load, bool state); // "light", "fridge", "ac", "washing"
-    void setINA(INA* inaRef); // Set INA reference for real data
     
 private:
+    // State arrays
+    bool panels[4];
+    bool cells[4];
+    bool loads[8];
+    int loadWatts[8];
+    
+    // Simulation state
     bool running;
+    bool simulateSun;
     unsigned long startTime;
     unsigned long lastUpdateTime;
     int durationSeconds;
-    float simCurrentHour;
-    INA* ina;
-    bool simulateSun; // Simuliere Sonnenintensität statt INA-Werte
+    float simCurrentHour;  // 0.0 to 24.0
+    int lastCalculatedStep;  // Track last calculated simulation step
     
-    // Panel/Cell/Load states
-    bool panels[4];
-    bool cells[4];
-    bool loads[8]; // light, fridge, ac, washing, wallbox, heatpump, dishwasher, tv
-    int loadWatts[8]; // 10, 150, 2000, 500, 11000, 3000, 2000, 300
+    // Simulation snapshot (fixed at start)
+    int activePanelsSnapshot;  // Number of panels when simulation started
+    int activeCellsSnapshot;   // Number of cells when simulation started
     
+    // Current data
     SimulationData currentData;
     
+    // Calculation methods
     void calculateSolarData();
-    void calculateBattery();
+    void calculateBattery(float deltaTimeSeconds);
     void calculateLoad();
-    float getSolarIntensity(float hour);
+    float getSolarIrradiance(float hour);
+    float applyJitter(float value, float percentage);
+    float applyCloudEffect(float irradiance);
 };
 
 #endif // SIMULATION_H

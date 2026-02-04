@@ -89,7 +89,6 @@ void setup() {
   
   // Simulation initialisieren
   simulation.begin();
-  simulation.setINA(&ina);
   
   // Webserver starten
   webServer.begin();

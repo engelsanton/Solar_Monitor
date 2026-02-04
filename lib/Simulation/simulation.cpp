@@ -1,16 +1,7 @@
 #include "simulation.h"
-#include <math.h>
 
 Simulation::Simulation() {
-    running = false;
-    startTime = 0;
-    lastUpdateTime = 0;
-    durationSeconds = 30;
-    simCurrentHour = 0.0;
-    ina = nullptr;
-    simulateSun = false;
-    
-    // Initialize states
+    // Initialize all states to false
     for (int i = 0; i < 4; i++) {
         panels[i] = false;
         cells[i] = false;
@@ -20,226 +11,325 @@ Simulation::Simulation() {
         loads[i] = false;
     }
     
-    // Panel 1 und Cell 1 standardmäßig an
+    // Default: Panel 1 and Cell 1 active
     panels[0] = true;
     cells[0] = true;
     
     // Load watts: light, fridge, ac, washing, wallbox, heatpump, dishwasher, tv
-    loadWatts[0] = 10;      // Light
-    loadWatts[1] = 150;     // Fridge
-    loadWatts[2] = 2000;    // AC
-    loadWatts[3] = 500;     // Washing Machine
-    loadWatts[4] = 11000;   // Wallbox E-Auto
-    loadWatts[5] = 3000;    // Heat Pump
-    loadWatts[6] = 2000;    // Dishwasher
-    loadWatts[7] = 300;     // TV
+    loadWatts[0] = 10;
+    loadWatts[1] = 150;
+    loadWatts[2] = 2000;
+    loadWatts[3] = 500;
+    loadWatts[4] = 5000;
+    loadWatts[5] = 3000;
+    loadWatts[6] = 2000;
+    loadWatts[7] = 300;
+    
+    // Initialize simulation state
+    running = false;
+    simulateSun = false;
+    startTime = 0;
+    lastUpdateTime = 0;
+    durationSeconds = 48;
+    simCurrentHour = 0.0;  // Start at midnight
+    lastCalculatedStep = -1;  // Force calculation on first update
+    activePanelsSnapshot = 0;
+    activeCellsSnapshot = 0;
     
     // Initialize data
-    currentData.current = 0.0;
     currentData.voltage = 0.0;
-    currentData.power = 0.0;
-    currentData.batteryLevel = 25.0; // Start bei 25%
-    currentData.load = 0.0;
-    currentData.hour = 6;
+    currentData.current = 0.0;
+    currentData.powerGenerated = 0.0;
+    currentData.powerLoad = 0.0;
+    currentData.powerNet = 0.0;
+    currentData.batteryLevel = 50.0;  // Start at 50%
+    currentData.hour = 12;
     currentData.minute = 0;
-    currentData.isDaytime = true;
+    currentData.irradiance = 0.0;
 }
 
 void Simulation::begin() {
     Serial.println("Simulation initialized");
 }
 
-void Simulation::setINA(INA* inaRef) {
-    ina = inaRef;
-    Serial.println("[DEBUG] Simulation::setINA() - INA reference set");
-}
-
 void Simulation::start(int durationSeconds, bool simulateSun) {
-    Serial.println("[DEBUG] Simulation::start() - Start");
-    
     this->durationSeconds = durationSeconds;
     this->simulateSun = simulateSun;
-    startTime = millis();
-    lastUpdateTime = startTime;
-    simCurrentHour = 0.0; // Start at 00:00 (midnight)
-    running = true;
-    currentData.batteryLevel = 25.0; // Start bei 25%
+    this->startTime = millis();
+    this->lastUpdateTime = startTime;
+    this->simCurrentHour = 0.0;  // Reset to midnight
+    this->lastCalculatedStep = -1;  // Force calculation
     
-    Serial.print("[DEBUG] Simulation::start() - Duration: ");
+    // Count and lock active panels
+    activePanelsSnapshot = 0;
+    for (int i = 0; i < 4; i++) {
+        if (panels[i]) activePanelsSnapshot++;
+    }
+    
+    // Count and lock active cells
+    activeCellsSnapshot = 0;
+    for (int i = 0; i < 4; i++) {
+        if (cells[i]) activeCellsSnapshot++;
+    }
+    
+    this->running = true;
+    
+    // Reset battery to 50%
+    currentData.batteryLevel = 50.0;
+    
+    Serial.println("=== Simulation Started ===");
+    Serial.print("Duration: ");
     Serial.print(durationSeconds);
-    Serial.print(" seconds, Simulate Sun: ");
-    Serial.println(simulateSun ? "ON" : "OFF");
     Serial.println(" seconds");
+    Serial.print("Simulate Sun: ");
+    Serial.println(simulateSun ? "ON" : "OFF");
+    Serial.print("Active Panels: ");
+    Serial.println(activePanelsSnapshot);
+    Serial.print("Active Cells: ");
+    Serial.println(activeCellsSnapshot);
+    Serial.print("Time step: 24h in ");
+    Serial.print(durationSeconds);
+    Serial.print("s -> 1h = ");
+    Serial.print(durationSeconds / 24.0);
+    Serial.println("s");
 }
 
 void Simulation::stop() {
-    Serial.println("[DEBUG] Simulation::stop() - Stopping simulation");
     running = false;
     simCurrentHour = 0.0;
-    Serial.println("[DEBUG] Simulation::stop() - Simulation stopped");
+    Serial.println("=== Simulation Stopped ===");
 }
 
 void Simulation::update() {
     if (!running) return;
     
     unsigned long currentTime = millis();
-    unsigned long elapsed = (currentTime - startTime) / 1000; // seconds
+    unsigned long elapsedMs = currentTime - startTime;
+    float elapsedSeconds = elapsedMs / 1000.0;
     
-    // Check if simulation should stop (24 hours completed)
-    if (elapsed >= durationSeconds) {
+    // Check if 24h simulation completed
+    if (elapsedSeconds >= durationSeconds) {
         stop();
         return;
     }
     
-    // Calculate current simulation hour (0-24), starting at 00:00
+    // Calculate current simulation hour (0-24), starting at 00:00 (midnight)
     float hoursPerSecond = 24.0 / (float)durationSeconds;
-    simCurrentHour = fmod((elapsed * hoursPerSecond), 24.0);
+    float totalHours = elapsedSeconds * hoursPerSecond;
+    simCurrentHour = fmod(totalHours, 24.0);  // Start at 0:00 and wrap at 24h
     
-    // Update time display (immer Tag, da Benutzer Licht selbst steuern)
+    // Update time display
     currentData.hour = (int)simCurrentHour;
     currentData.minute = (int)((simCurrentHour - currentData.hour) * 60.0);
-    currentData.isDaytime = true; // Immer Tag, Licht wird manuell gesteuert
     
-    // Calculate simulation data
-    calculateSolarData();
-    calculateBattery();
-    calculateLoad();
+    // Calculate current simulation step (48 steps for 24h = 2 steps per hour)
+    int currentStep = (int)(simCurrentHour * 2.0);
     
-    lastUpdateTime = currentTime;
+    // Only recalculate if we moved to a new step
+    if (currentStep != lastCalculatedStep) {
+        lastCalculatedStep = currentStep;
+        
+        // Calculate delta time since last update
+        float deltaTimeSeconds = (currentTime - lastUpdateTime) / 1000.0;
+        
+        // Update simulation
+        calculateSolarData();
+        calculateLoad();
+        calculateBattery(deltaTimeSeconds);
+        
+        lastUpdateTime = currentTime;
+    }
 }
 
 void Simulation::calculateSolarData() {
-    // Count active panels
-    int activePanels = 0;
-    for (int i = 0; i < 4; i++) {
-        if (panels[i]) activePanels++;
+    // Use snapshot of panels from simulation start
+    int activePanels = activePanelsSnapshot;
+    
+    if (activePanels == 0 || !simulateSun) {
+        currentData.voltage = 0.0;
+        currentData.current = 0.0;
+        currentData.powerGenerated = 0.0;
+        currentData.irradiance = 0.0;
+        return;
     }
     
-    // Wenn simulateSun aktiviert ist oder kein INA vorhanden
-    if (simulateSun || (ina == nullptr || !ina->isFound())) {
-        // Synthetische Sonnensimulation basierend auf Tageszeit
-        float solarIntensity = getSolarIntensity(simCurrentHour);
-        
-        // Basis-Werte für ein 2.5kWp Panel bei voller Sonne
-        // Annahme: 2500W peak, ca. 10V, 250A bei Spitzenlast
-        // Skaliert mit Sonnenintensität (0-1)
-        float baseCurrent = 250.0 * solarIntensity; // mA
-        float baseVoltage = 10000.0 * solarIntensity; // mV (10V)
-        
-        currentData.current = baseCurrent;
-        currentData.voltage = baseVoltage;
-        currentData.power = (baseVoltage * baseCurrent) / 1000.0; // mW
-        
-        // Skalierung mit aktiven Panels (1-4)
-        float panelFactor = activePanels > 0 ? activePanels / 4.0 : 0.0;
-        currentData.current *= panelFactor;
-        currentData.voltage *= panelFactor;
-        currentData.power *= panelFactor;
-        
-    } else {
-        // Echte INA219-Werte mit Berechnungsvorschrift
-        float measCurrent = ina->getCurrent(); // mA
-        float measVoltage = ina->getBusVoltage(); // V
-        
-        // Berechnungsvorschrift anwenden:
-        // I_Real = I_Mess × 125
-        // U_Real = U_Mess × 160
-        // P_Real = U_Real * I_Real (berechnet, nicht aus INA)
-        currentData.current = measCurrent * 125.0; // mA
-        currentData.voltage = measVoltage * 160.0 * 1000.0; // V × 160 in mV
-        
-        // Leistung berechnen: P = U * I
-        // U in mV, I in mA -> P = (U * I) / 1000 in mW
-        currentData.power = (currentData.voltage * currentData.current) / 1000.0; // mW
-        
-        // Skalierung mit aktiven Panels (1-4)
-        float panelFactor = activePanels > 0 ? activePanels / 4.0 : 0.0;
-        currentData.current *= panelFactor;
-        currentData.voltage *= panelFactor;
-        currentData.power *= panelFactor;
-    }
-}
-
-void Simulation::calculateBattery() {
-    // Count active cells
-    int activeCells = 0;
-    for (int i = 0; i < 4; i++) {
-        if (cells[i]) activeCells++;
-    }
+    // Get base irradiance from solar profile
+    float irradiance = getSolarIrradiance(simCurrentHour);
     
-    if (activeCells == 0) return;
+    // Apply jitter (±12% random noise)
+    irradiance = applyJitter(irradiance, 12.0);
     
-    // Count active panels
-    int activePanels = 0;
-    for (int i = 0; i < 4; i++) {
-        if (panels[i]) activePanels++;
+    // Apply cloud effect (random brief drops)
+    irradiance = applyCloudEffect(irradiance);
+    
+    // Clamp between 0 and 1
+    if (irradiance < 0.0) irradiance = 0.0;
+    if (irradiance > 1.0) irradiance = 1.0;
+    
+    currentData.irradiance = irradiance;
+    
+    // Realistic day-night cycle:
+    // Night (20:00-4:00): Complete darkness, U=0V, I=0A
+    // Early dawn (4:00-6:00): Voltage rises to ~200V, current stays ~0A
+    // Sunrise (6:00): Voltage at 200V, current starts rising
+    // Morning (6:00-12:00): Current rises, voltage drops to 180V
+    // Noon (12:00): Current maximum, voltage at 180V
+    // Afternoon (12:00-18:00): Current drops, voltage rises
+    // Evening (18:00): Current = 0A, voltage back at 200V
+    // Late dusk (18:00-20:00): Voltage drops to 0V
+    
+    float baseVoltage = 0.0;
+    float currentPerPanel = 0.0;
+    
+    if (simCurrentHour >= 20.0 || simCurrentHour < 4.0) {
+        // Night (20:00 - 4:00): Complete darkness
+        baseVoltage = 0.0;
+        currentPerPanel = 0.0;
+    } 
+    else if (simCurrentHour >= 4.0 && simCurrentHour < 6.0) {
+        // Early dawn (4:00 - 6:00): Voltage rises to 200V, minimal current
+        float dawnProgress = (simCurrentHour - 4.0) / 2.0;  // 0 to 1
+        baseVoltage = 200.0 * dawnProgress;  // 0V -> 200V
+        currentPerPanel = 0.0;  // Almost no current
+    }
+    else if (simCurrentHour >= 6.0 && simCurrentHour < 12.0) {
+        // Morning (6:00 - 12:00): Current rises, voltage drops
+        float morningProgress = (simCurrentHour - 6.0) / 6.0;  // 0 to 1
+        baseVoltage = 200.0 - (20.0 * morningProgress);  // 200V -> 180V
+        currentPerPanel = 12.0 * irradiance * morningProgress;  // 0A -> 12A
+    }
+    else if (simCurrentHour >= 12.0 && simCurrentHour < 18.0) {
+        // Afternoon (12:00 - 18:00): Current drops, voltage rises
+        float afternoonProgress = (simCurrentHour - 12.0) / 6.0;  // 0 to 1
+        baseVoltage = 180.0 + (20.0 * afternoonProgress);  // 180V -> 200V
+        currentPerPanel = 12.0 * irradiance * (1.0 - afternoonProgress);  // 12A -> 0A
+    }
+    else if (simCurrentHour >= 18.0 && simCurrentHour < 20.0) {
+        // Late dusk (18:00 - 20:00): Voltage drops to 0V
+        float duskProgress = (simCurrentHour - 18.0) / 2.0;  // 0 to 1
+        baseVoltage = 200.0 * (1.0 - duskProgress);  // 200V -> 0V
+        currentPerPanel = 0.0;  // No current
     }
     
-    // Berechne P_Netto = P_Solar - P_Last
-    float solarPowerW = currentData.power / 1000.0; // mW zu W
-    float loadPowerW = currentData.load; // W
-    float netPowerW = solarPowerW - loadPowerW; // P_Netto in W
-    
-    // Zeitfaktor: 1 Sekunde Echtzeit = wie viele Stunden Simulation?
-    float hoursPerSecond = 24.0 / (float)durationSeconds;
-    
-    // Update-Intervall in Sekunden (100ms = 0.1s)
-    float deltaTimeSeconds = 0.1; // 100ms Loop
-    
-    // Formel: ΔE(Wh) = (P_Netto × Zeitfaktor × Δt(in Sek)) / 3600
-    float deltaEnergyWh = (netPowerW * hoursPerSecond * deltaTimeSeconds) / 3600.0;
-    
-    // Batterie-Kapazität: 4 Zellen × 5 kWh = 20 kWh
-    float batteryCapacityWh = activeCells * 5000.0; // Wh
-    
-    // ΔE in Prozent umrechnen
-    float deltaPercent = (deltaEnergyWh / batteryCapacityWh) * 100.0;
-    
-    // Ladeeffizienz: 85% beim Laden
-    if (netPowerW > 0) {
-        deltaPercent *= 0.85;
+    // Apply jitter to voltage (±5% noise)
+    if (baseVoltage > 0.0) {
+        baseVoltage = applyJitter(baseVoltage, 5.0);
+        if (baseVoltage < 0.0) baseVoltage = 0.0;
+        if (baseVoltage > 220.0) baseVoltage = 220.0;  // Clamp to reasonable range
     }
     
-    currentData.batteryLevel += deltaPercent;
+    // Total current = currentPerPanel × number of active panels
+    float totalCurrent = currentPerPanel * activePanels;
     
-    // Clamp between 0 and 100
-    if (currentData.batteryLevel < 0) currentData.batteryLevel = 0;
-    if (currentData.batteryLevel > 100) currentData.batteryLevel = 100;
+    // Power = V × I (per panel)
+    float power = baseVoltage * totalCurrent;  // Total power in Watts
+    
+    // Store values
+    currentData.voltage = baseVoltage;  // Voltage (constant across panels in series)
+    currentData.current = totalCurrent;  // Total current (sum of all panels)
+    currentData.powerGenerated = power;
 }
 
 void Simulation::calculateLoad() {
     float totalLoad = 0.0;
     
-    // Summiere aktive Lasten
+    // Sum all active loads
     for (int i = 0; i < 8; i++) {
         if (loads[i]) {
             totalLoad += loadWatts[i];
         }
     }
     
-    // Realistische Variation: +/- 5%
-    float variation = totalLoad * (random(-5, 5) / 100.0);
-    totalLoad += variation;
+    // Apply ±3% fluctuation
+    totalLoad = applyJitter(totalLoad, 3.0);
     
-    if (totalLoad < 0) totalLoad = 0;
+    if (totalLoad < 0.0) totalLoad = 0.0;
     
-    currentData.load = totalLoad;
+    currentData.powerLoad = totalLoad;
 }
 
-float Simulation::getSolarIntensity(float hour) {
-    // No sun at night (18:00 - 6:00)
-    if (hour < 6.0 || hour >= 18.0) {
-        return 0.0;
+void Simulation::calculateBattery(float deltaTimeSeconds) {
+    // Use snapshot of cells from simulation start
+    int activeCells = activeCellsSnapshot;
+    
+    if (activeCells == 0) {
+        // No battery available - clamp SoC
+        currentData.batteryLevel = 0.0;
+        return;
     }
     
-    // Parabolic curve peaking at noon
-    float hoursSinceSunrise = hour - 6.0;
-    float normalizedTime = hoursSinceSunrise / 12.0; // 0 to 1
-    return sin(normalizedTime * PI); // 0 to 1 to 0
+    // Calculate net power: P_net = P_gen - P_load
+    currentData.powerNet = currentData.powerGenerated - currentData.powerLoad;
+    
+    // Battery capacity: 5kWh per cell
+    float batteryCapacityWh = activeCells * 5000.0;  // Wh
+    
+    // Time scaling: real time -> simulation time
+    float hoursPerSecond = 24.0 / (float)durationSeconds;
+    float simulatedHours = deltaTimeSeconds * hoursPerSecond;
+    
+    // Energy change: ΔE = P_net * time (in hours)
+    float deltaEnergyWh = currentData.powerNet * simulatedHours;
+    
+    // Apply charging efficiency (85% when charging)
+    if (deltaEnergyWh > 0) {
+        deltaEnergyWh *= 0.85;
+    }
+    
+    // Convert to percentage: ΔSoC% = (ΔE / Capacity) * 100
+    float deltaSoC = (deltaEnergyWh / batteryCapacityWh) * 100.0;
+    
+    // Update SoC
+    currentData.batteryLevel += deltaSoC;
+    
+    // Clamp between 0 and 100
+    if (currentData.batteryLevel < 0.0) currentData.batteryLevel = 0.0;
+    if (currentData.batteryLevel > 100.0) currentData.batteryLevel = 100.0;
+}
+
+float Simulation::getSolarIrradiance(float hour) {
+    // Half-sine wave from 06:00 to 18:00
+    // Peak at 12:00 (noon)
+    
+    if (hour < 6.0 || hour >= 18.0) {
+        return 0.0;  // No sun at night
+    }
+    
+    // Map hour to sine wave (0 to π)
+    float hoursSinceSunrise = hour - 6.0;  // 0 to 12
+    float angle = (hoursSinceSunrise / 12.0) * PI;  // 0 to π
+    
+    return sin(angle);  // 0 to 1 to 0
+}
+
+float Simulation::applyJitter(float value, float percentage) {
+    // Add random noise: ±percentage%
+    float jitterFactor = (random(-100, 101) / 100.0) * (percentage / 100.0);
+    return value * (1.0 + jitterFactor);
+}
+
+float Simulation::applyCloudEffect(float irradiance) {
+    // Random cloud events: 10% chance per update
+    // When cloud passes, drop irradiance by 40-80%
+    
+    if (random(0, 100) < 10) {
+        float dropPercentage = random(40, 81) / 100.0;
+        return irradiance * (1.0 - dropPercentage);
+    }
+    
+    return irradiance;
 }
 
 bool Simulation::isRunning() {
     return running;
+}
+
+float Simulation::getProgress() {
+    if (!running) return 0.0;
+    
+    unsigned long elapsed = (millis() - startTime) / 1000;
+    float progress = (float)elapsed / (float)durationSeconds;
+    return progress > 1.0 ? 1.0 : progress;
 }
 
 SimulationData Simulation::getCurrentData() {
@@ -248,54 +338,45 @@ SimulationData Simulation::getCurrentData() {
 
 String Simulation::getDataAsJson() {
     String json = "{";
-    json += "\"current\":" + String(currentData.current, 1) + ",";
-    json += "\"voltage\":" + String(currentData.voltage, 1) + ",";
-    json += "\"power\":" + String(currentData.power, 1) + ",";
-    json += "\"batteryLevel\":" + String(currentData.batteryLevel, 1) + ",";
-    json += "\"load\":" + String(currentData.load, 1) + ",";
+    json += "\"voltage\":" + String(currentData.voltage, 2) + ",";
+    json += "\"current\":" + String(currentData.current, 2) + ",";
+    json += "\"powerGenerated\":" + String(currentData.powerGenerated, 2) + ",";
+    json += "\"powerLoad\":" + String(currentData.powerLoad, 2) + ",";
+    json += "\"powerNet\":" + String(currentData.powerNet, 2) + ",";
+    json += "\"batteryLevel\":" + String(currentData.batteryLevel, 2) + ",";
     json += "\"hour\":" + String(currentData.hour) + ",";
     json += "\"minute\":" + String(currentData.minute) + ",";
-    json += "\"isDaytime\":" + String(currentData.isDaytime ? "true" : "false") + ",";
-    json += "\"isRunning\":" + String(running ? "true" : "false");
+    json += "\"irradiance\":" + String(currentData.irradiance, 3) + ",";
+    json += "\"isRunning\":" + String(running ? "true" : "false") + ",";
+    json += "\"progress\":" + String(getProgress(), 3);
     json += "}";
     return json;
 }
 
-float Simulation::getProgress() {
-    if (!running) return 0.0;
-    
-    unsigned long elapsed = (millis() - startTime) / 1000;
-    return (float)elapsed / (float)durationSeconds;
-}
-
 void Simulation::setPanelState(int panel, bool state) {
-    Serial.print("[DEBUG] Simulation::setPanelState() - Panel ");
-    Serial.print(panel);
-    Serial.print(", State: ");
-    Serial.println(state ? "ON" : "OFF");
-    
     if (panel >= 1 && panel <= 4) {
         panels[panel - 1] = state;
+        Serial.print("Panel ");
+        Serial.print(panel);
+        Serial.println(state ? " ON" : " OFF");
+        
+        // Note: Changes during simulation won't take effect until next start
+        if (running) {
+            Serial.println("  (Changes will apply on next simulation start)");
+        }
     }
 }
 
 void Simulation::setCellState(int cell, bool state) {
-    Serial.print("[DEBUG] Simulation::setCellState() - Cell ");
-    Serial.print(cell);
-    Serial.print(", State: ");
-    Serial.println(state ? "ON" : "OFF");
-    
     if (cell >= 1 && cell <= 4) {
         cells[cell - 1] = state;
+        Serial.print("Cell ");
+        Serial.print(cell);
+        Serial.println(state ? " ON" : " OFF");
     }
 }
 
 void Simulation::setLoadState(String load, bool state) {
-    Serial.print("[DEBUG] Simulation::setLoadState() - Load ");
-    Serial.print(load);
-    Serial.print(", State: ");
-    Serial.println(state ? "ON" : "OFF");
-    
     int index = -1;
     if (load == "light") index = 0;
     else if (load == "fridge") index = 1;
@@ -308,5 +389,8 @@ void Simulation::setLoadState(String load, bool state) {
     
     if (index >= 0) {
         loads[index] = state;
+        Serial.print("Load ");
+        Serial.print(load);
+        Serial.println(state ? " ON" : " OFF");
     }
 }
