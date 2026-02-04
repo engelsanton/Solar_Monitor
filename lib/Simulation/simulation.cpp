@@ -7,7 +7,7 @@ Simulation::Simulation() {
         cells[i] = false;
     }
     
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 6; i++) {
         loads[i] = false;
     }
     
@@ -15,19 +15,18 @@ Simulation::Simulation() {
     panels[0] = true;
     cells[0] = true;
     
-    // Load watts: light, fridge, ac, washing, wallbox, heatpump, dishwasher, tv
-    loadWatts[0] = 10;
+    // Load watts: light, fridge, ac, dryer, dishwasher, tv
+    loadWatts[0] = 100;
     loadWatts[1] = 150;
     loadWatts[2] = 2000;
     loadWatts[3] = 500;
-    loadWatts[4] = 5000;
-    loadWatts[5] = 3000;
-    loadWatts[6] = 2000;
-    loadWatts[7] = 300;
+    loadWatts[4] = 2000;
+    loadWatts[5] = 300;
     
     // Initialize simulation state
     running = false;
     simulateSun = false;
+    autoToggleLoads = false;
     startTime = 0;
     lastUpdateTime = 0;
     durationSeconds = 48;
@@ -231,10 +230,33 @@ void Simulation::calculateSolarData() {
 }
 
 void Simulation::calculateLoad() {
+    // Auto toggle loads based on time if enabled
+    if (autoToggleLoads && running) {
+        int hour = (int)simCurrentHour;
+        
+        // Light (100W): 6-9 and 18-24
+        loads[0] = (hour >= 6 && hour < 9) || (hour >= 18 && hour < 24);
+        
+        // Fridge (150W): 24h
+        loads[1] = true;
+        
+        // AC (2000W): 10-14
+        loads[2] = (hour >= 10 && hour < 14);
+        
+        // Dryer (500W): 16-17
+        loads[3] = (hour >= 16 && hour < 17);
+        
+        // Dishwasher (2000W): 10-11 and 17-18
+        loads[4] = (hour >= 10 && hour < 11) || (hour >= 17 && hour < 18);
+        
+        // TV (300W): 19-22
+        loads[5] = (hour >= 19 && hour < 22);
+    }
+    
     float totalLoad = 0.0;
     
     // Sum all active loads
-    for (int i = 0; i < 8; i++) {
+    for (int i = 0; i < 6; i++) {
         if (loads[i]) {
             totalLoad += loadWatts[i];
         }
@@ -348,6 +370,15 @@ String Simulation::getDataAsJson() {
     json += "\"minute\":" + String(currentData.minute) + ",";
     json += "\"irradiance\":" + String(currentData.irradiance, 3) + ",";
     json += "\"isRunning\":" + String(running ? "true" : "false") + ",";
+    json += "\"autoToggleLoads\":" + String(autoToggleLoads ? "true" : "false") + ",";
+    json += "\"loads\":{";
+    json += "\"light\":" + String(loads[0] ? "true" : "false") + ",";
+    json += "\"fridge\":" + String(loads[1] ? "true" : "false") + ",";
+    json += "\"ac\":" + String(loads[2] ? "true" : "false") + ",";
+    json += "\"dryer\":" + String(loads[3] ? "true" : "false") + ",";
+    json += "\"dishwasher\":" + String(loads[4] ? "true" : "false") + ",";
+    json += "\"tv\":" + String(loads[5] ? "true" : "false");
+    json += "},";
     json += "\"progress\":" + String(getProgress(), 3);
     json += "}";
     return json;
@@ -377,15 +408,19 @@ void Simulation::setCellState(int cell, bool state) {
 }
 
 void Simulation::setLoadState(String load, bool state) {
+    // Ignore manual changes if auto toggle is enabled
+    if (autoToggleLoads) {
+        Serial.println("Auto toggle loads enabled - ignoring manual change");
+        return;
+    }
+    
     int index = -1;
     if (load == "light") index = 0;
     else if (load == "fridge") index = 1;
     else if (load == "ac") index = 2;
-    else if (load == "washing") index = 3;
-    else if (load == "wallbox") index = 4;
-    else if (load == "heatpump") index = 5;
-    else if (load == "dishwasher") index = 6;
-    else if (load == "tv") index = 7;
+    else if (load == "dryer") index = 3;
+    else if (load == "dishwasher") index = 4;
+    else if (load == "tv") index = 5;
     
     if (index >= 0) {
         loads[index] = state;
@@ -393,4 +428,10 @@ void Simulation::setLoadState(String load, bool state) {
         Serial.print(load);
         Serial.println(state ? " ON" : " OFF");
     }
+}
+
+void Simulation::setAutoToggleLoads(bool enable) {
+    autoToggleLoads = enable;
+    Serial.print("Auto toggle loads: ");
+    Serial.println(enable ? "ENABLED" : "DISABLED");
 }

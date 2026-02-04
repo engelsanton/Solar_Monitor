@@ -28,6 +28,7 @@ private:
     void handleSetPanel();
     void handleSetCell();
     void handleSetLoad();
+    void handleAutoToggleLoads();
     void handleRealData();
     void handleNotFound();
 };

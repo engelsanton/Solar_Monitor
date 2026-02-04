@@ -23,6 +23,7 @@ void WebServerManager::begin() {
     server.on("/simulation/panel", HTTP_POST, [this]() { this->handleSetPanel(); });
     server.on("/simulation/cell", HTTP_POST, [this]() { this->handleSetCell(); });
     server.on("/simulation/load", HTTP_POST, [this]() { this->handleSetLoad(); });
+    server.on("/simulation/autotoggle", HTTP_POST, [this]() { this->handleAutoToggleLoads(); });
     
     // Real data endpoint
     server.on("/real/data", HTTP_GET, [this]() { this->handleRealData(); });
@@ -249,4 +250,21 @@ void WebServerManager::handleRealData() {
     server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     server.send(200, "application/json", json);
     Serial.println("[DEBUG] handleRealData() - Data sent to client");
+}
+
+void WebServerManager::handleAutoToggleLoads() {
+    if (!server.hasArg("enable")) {
+        server.send(400, "application/json", "{\"success\":false,\"error\":\"Missing enable parameter\"}");
+        return;
+    }
+    
+    bool enable = server.arg("enable") == "1" || server.arg("enable") == "true";
+    simulation->setAutoToggleLoads(enable);
+    
+    String json = "{\"success\":true,\"autoToggleLoads\":";
+    json += enable ? "true" : "false";
+    json += "}";
+    
+    server.sendHeader("Connection", "close");
+    server.send(200, "application/json", json);
 }

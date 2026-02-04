@@ -26,6 +26,7 @@ public:
     void update();
     bool isRunning();
     float getProgress();  // 0.0 to 1.0
+    void setAutoToggleLoads(bool enable);  // Enable/disable auto toggle
     
     // State setters
     void setPanelState(int panel, bool state);    // panel 1-4
@@ -40,12 +41,13 @@ private:
     // State arrays
     bool panels[4];
     bool cells[4];
-    bool loads[8];
-    int loadWatts[8];
+    bool loads[6];
+    int loadWatts[6];
     
     // Simulation state
     bool running;
     bool simulateSun;
+    bool autoToggleLoads;  // Auto toggle loads based on time
     unsigned long startTime;
     unsigned long lastUpdateTime;
     int durationSeconds;

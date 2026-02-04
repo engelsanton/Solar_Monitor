@@ -534,7 +534,7 @@
                     <div class="button-wrapper">
                         <button class="load-btn toggle-btn" data-load="light">
                             <span>Light</span>
-                            <span class="button-spec">10 W</span>
+                            <span class="button-spec">100 W</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
@@ -550,27 +550,15 @@
                         </button>
                     </div>
                     <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="washing">
-                            <span>Washing</span>
+                        <button class="load-btn toggle-btn" data-load="dryer">
+                            <span>Dryer</span>
                             <span class="button-spec">500 W</span>
-                        </button>
-                    </div>
-                    <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="wallbox">
-                            <span>Wallbox</span>
-                            <span class="button-spec">11 kW</span>
-                        </button>
-                    </div>
-                    <div class="button-wrapper">
-                        <button class="load-btn toggle-btn" data-load="heatpump">
-                            <span>Heat Pump</span>
-                            <span class="button-spec">3 kW</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
                         <button class="load-btn toggle-btn" data-load="dishwasher">
                             <span>Dishwasher</span>
-                            <span class="button-spec">2 kW</span>
+                            <span class="button-spec">2000 W</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
@@ -583,6 +571,12 @@
                 <div class="chart-container">
                     <svg id="loadChart" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet"></svg>
                 </div>
+                <div class="card" style="margin-top: 20px;">
+                    <div class="card-title">Load Activity Log</div>
+                    <div id="loadLog" style="font-family: monospace; font-size: 0.85rem; color: #999; max-height: 200px; overflow-y: auto; line-height: 1.6;">
+                        <div style="color: #666; font-style: italic;">Start simulation to see load activity...</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -593,7 +587,7 @@
                 <div class="settings-row">
                     <span class="settings-label">Simulate Sun</span>
                     <label class="switch">
-                        <input type="checkbox" id="simulateSun" checked>
+                        <input type="checkbox" id="simulateSun">
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -635,6 +629,9 @@
             simulationDuration: 48,
             pollingInterval: null,
             activePanels: 1,  // Track active panels
+            autoToggleLoads: false,  // Track auto toggle loads setting
+            previousLoadStates: null,  // Track previous load states for logging
+            loadLogInitialized: false,  // Track if initial log was written
             chartData: {
                 modules: {voltage: [], current: []},
                 battery: {soc: []},
@@ -770,6 +767,9 @@
             // Load Buttons
             document.querySelectorAll('[data-load]').forEach(btn => {
                 btn.addEventListener('click', function() {
+                    // Ignore clicks if auto toggle is enabled
+                    if (state.autoToggleLoads) return;
+                    
                     const loadType = this.dataset.load;
                     const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
@@ -780,6 +780,26 @@
                         body: `load=${loadType}&state=${newState ? 1 : 0}`
                     });
                 });
+            });
+            
+            // Auto Toggle Loads checkbox
+            document.getElementById('autoToggleLoads').addEventListener('change', function() {
+                state.autoToggleLoads = this.checked;
+                updateLoadButtonsState();
+                
+                // Send to backend
+                fetch('/simulation/autotoggle', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `enable=${this.checked ? 1 : 0}`
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log('Auto toggle loads:', this.checked ? 'enabled' : 'disabled');
+                    }
+                })
+                .catch(err => console.error('Failed to set auto toggle:', err));
             });
         }
 
@@ -845,6 +865,12 @@
             
             // Clear all chart data before starting
             clearChartData();
+            
+            // Reset load log
+            state.previousLoadStates = null;
+            state.loadLogInitialized = false;
+            const logElement = document.getElementById('loadLog');
+            logElement.innerHTML = '';
             
             fetch('/simulation', {
                 method: 'POST',
@@ -927,6 +953,95 @@
                 btn.classList.remove('disabled');
             });
         }
+        
+        function updateLoadButtonsState() {
+            const loadButtons = document.querySelectorAll('[data-load]');
+            if (state.autoToggleLoads) {
+                loadButtons.forEach(btn => btn.classList.add('disabled'));
+            } else {
+                loadButtons.forEach(btn => btn.classList.remove('disabled'));
+            }
+        }
+        
+        function updateLoadButtonsFromData(loads) {
+            // Update button visual states based on backend data
+            const loadMap = {
+                'light': loads.light,
+                'fridge': loads.fridge,
+                'ac': loads.ac,
+                'dryer': loads.dryer,
+                'dishwasher': loads.dishwasher,
+                'tv': loads.tv
+            };
+            
+            Object.keys(loadMap).forEach(loadType => {
+                const btn = document.querySelector(`[data-load="${loadType}"]`);
+                if (btn) {
+                    if (loadMap[loadType]) {
+                        btn.classList.add('active');
+                    } else {
+                        btn.classList.remove('active');
+                    }
+                }
+            });
+        }
+        
+        function updateLoadLog(loads, hour, minute) {
+            const logElement = document.getElementById('loadLog');
+            
+            // Format time
+            let h = hour % 12;
+            if (h === 0) h = 12;
+            const ampm = hour < 12 ? 'am' : 'pm';
+            const m = minute.toString().padStart(2, '0');
+            const timeStr = `${h}:${m} ${ampm}`;
+            
+            // First call - log initial state
+            if (!state.loadLogInitialized) {
+                state.loadLogInitialized = true;
+                state.previousLoadStates = {...loads};
+                
+                const activeLoads = [];
+                Object.keys(loads).forEach(key => {
+                    if (loads[key]) {
+                        activeLoads.push(key.charAt(0).toUpperCase() + key.slice(1));
+                    }
+                });
+                
+                const initialLog = `<div style="color: #4caf50; margin-bottom: 5px;">
+                    <strong>${timeStr}</strong> - Initial state: ${activeLoads.length > 0 ? activeLoads.join(', ') + ' ON' : 'All loads OFF'}
+                </div>`;
+                logElement.innerHTML = initialLog;
+                return;
+            }
+            
+            // Check for changes
+            const changes = [];
+            Object.keys(loads).forEach(key => {
+                if (loads[key] !== state.previousLoadStates[key]) {
+                    const loadName = key.charAt(0).toUpperCase() + key.slice(1);
+                    const status = loads[key] ? 'ON' : 'OFF';
+                    const color = loads[key] ? '#4caf50' : '#f44336';
+                    changes.push({name: loadName, status, color});
+                }
+            });
+            
+            // Log changes
+            if (changes.length > 0) {
+                changes.forEach(change => {
+                    const logEntry = `<div style="color: ${change.color}; margin-bottom: 3px;">
+                        <strong>${timeStr}</strong> - ${change.name} ${change.status}
+                    </div>`;
+                    logElement.innerHTML += logEntry;
+                });
+                
+                // Auto-scroll to bottom
+                logElement.scrollTop = logElement.scrollHeight;
+                
+                // Update previous state
+                state.previousLoadStates = {...loads};
+            }
+        }
 
         function startDataPolling() {
             if (state.pollingInterval) return; // Already polling
@@ -949,6 +1064,12 @@
             .then(data => {
                 updateChartsWithData(data);
                 updateTimeDisplay(data.hour, data.minute);
+                
+                // Update load buttons if auto toggle is enabled
+                if (data.autoToggleLoads && data.loads) {
+                    updateLoadButtonsFromData(data.loads);
+                    updateLoadLog(data.loads, data.hour, data.minute);
+                }
                 
                 // Auto-stop if simulation ended
                 if (!data.isRunning && state.simulationRunning) {
