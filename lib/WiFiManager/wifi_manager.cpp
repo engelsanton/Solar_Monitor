@@ -5,18 +5,17 @@ WiFiManager::WiFiManager(const char* ssid, const char* password)
 }
 
 void WiFiManager::begin() {
-    Serial.println("Starte WiFi Access Point...");
+    Serial.println("Starting WiFi Access Point...");
     
-    // Access Point starten
     WiFi.mode(WIFI_AP);
     WiFi.softAP(apSSID, apPassword);
     
     delay(100);
     
     IPAddress IP = WiFi.softAPIP();
-    Serial.print("Access Point gestartet: ");
+    Serial.print("Access Point started: ");
     Serial.println(apSSID);
-    Serial.print("IP Adresse: ");
+    Serial.print("IP Address: ");
     Serial.println(IP);
 }
 

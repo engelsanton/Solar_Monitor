@@ -15,103 +15,88 @@ Simulation simulation(&ina);
 WiFiManager wifiManager("Solar_Monitor", "12345678");
 WebServerManager webServer(&transistor, &simulation, &ina);
 
-bool oled_found = false;
-bool ina219_found = false;
-
 void scanI2C() {
-  Serial.println("I2C Scan starten...");
-  int nDevices = 0;
+  Serial.println("Starting I2C scan...");
+  int deviceCount = 0;
   
-  for (byte i = 1; i < 127; i++) {
-    Wire.beginTransmission(i);
+  for (byte address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
     byte error = Wire.endTransmission();
     
     if (error == 0) {
-      Serial.print("I2C Gerät gefunden bei Adresse: 0x");
-      if (i < 16) Serial.print("0");
-      Serial.println(i, HEX);
+      Serial.print("I2C device found at address: 0x");
+      if (address < 16) Serial.print("0");
+      Serial.println(address, HEX);
       
-      if (i == OLED_ADDR) {
-        oled_found = true;
-        Serial.println("  -> OLED gefunden!");
+      if (address == OLED_ADDR) {
+        Serial.println("  -> OLED detected");
       }
-      if (i == INA219_ADDR) {
-        ina219_found = true;
-        Serial.println("  -> INA219 gefunden!");
+      if (address == INA219_ADDR) {
+        Serial.println("  -> INA219 detected");
       }
-      nDevices++;
+      deviceCount++;
     }
   }
   
-  Serial.print("Gesamt gefunden: ");
-  Serial.println(nDevices);
+  Serial.print("Total devices found: ");
+  Serial.println(deviceCount);
 }
 
 void setup() {
   Serial.begin(115200);
   delay(500);
-  Serial.println("\n\n=== ESP32-S3 INA219 Test ===");
+  Serial.println("\n\n=== Solar Monitor System ===");
   
-  // Transistoren initialisieren
+  // Initialize transistors
   transistor.begin();
   
+  // Initialize I2C
   Wire.begin(OLED_SDA, OLED_SCL);
   
-  // I2C Scan durchführen
+  // Scan I2C bus
   scanI2C();
   
-  // OLED initialisieren
-  if (oled_found) {
-    if (oled.begin()) {
-      oled.showBootScreen();
-    } else {
-      oled_found = false;
-    }
+  // Initialize OLED
+  if (oled.begin()) {
+    oled.showBootScreen();
   } else {
-    Serial.println("OLED nicht auf I2C gefunden!");
+    Serial.println("OLED initialization failed");
   }
   
-  // INA219 initialisieren
-  if (ina219_found) {
-    if (ina.begin()) {
-      // Erfolgreich initialisiert
-    } else {
-      ina219_found = false;
-    }
-  } else {
-    Serial.println("INA219 nicht auf I2C gefunden!");
+  // Initialize INA219
+  if (!ina.begin()) {
+    Serial.println("INA219 initialization failed");
   }
   
   delay(1000);
   
-  // WiFi Access Point starten
+  // Start WiFi Access Point
   wifiManager.begin();
   
-  // Simulation initialisieren
+  // Initialize simulation
   simulation.begin();
   
-  // Webserver starten
+  // Start web server
   webServer.begin();
   
-  Serial.println("System bereit!");
+  Serial.println("System ready!");
 }
 
 void loop() {
-  // Webserver Anfragen verarbeiten
+  // Handle web server requests
   webServer.handleClient();
   
-  // Simulation aktualisieren
+  // Update simulation
   simulation.update();
   
-  // OLED aktualisieren
-  if (oled_found) {
-    float busV = 0.0, shuntV = 0.0, currentMA = 0.0, powerMW = 0.0;
+  // Update OLED display
+  if (oled.isFound()) {
+    float voltage = 0.0;
+    float current = 0.0;
     
-    if (ina219_found) {
-      busV = ina.getBusVoltage();
-      shuntV = ina.getShuntVoltage();
-      currentMA = ina.getCurrent();
-      powerMW = ina.getPower();
+    if (ina.isFound()) {
+      voltage = ina.getBusVoltage();
+      current = ina.getCurrent();
     }
     
     oled.showStatus(
@@ -119,12 +104,11 @@ void loop() {
       transistor.getState2(), 
       transistor.getState3(), 
       transistor.getState4(),
-      busV, currentMA,
-      ina219_found
+      voltage,
+      current,
+      ina.isFound()
     );
-  } else {
-    Serial.println("OLED nicht verfügbar!");
   }
   
-  delay(100); // Faster loop for smoother simulation
+  delay(100);
 }

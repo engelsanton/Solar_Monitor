@@ -27,7 +27,7 @@ Simulation::Simulation(INA* inaRef) : ina(inaRef) {
     running = false;
     simulateSun = false;
     autoToggleLoads = false;
-    currentMultiplier = 2000.0;  // Default calibration multiplier
+    currentMultiplier = 1000.0;  // Default calibration multiplier
     startTime = 0;
     lastUpdateTime = 0;
     durationSeconds = 48;
