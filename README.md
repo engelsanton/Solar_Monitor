@@ -4,7 +4,6 @@ A comprehensive ESP32-based solar monitoring and simulation system for education
 
 ## 📋 Table of Contents
 - [Overview](#overview)
-- [Features](#features)
 - [Hardware Requirements](#hardware-requirements)
 - [Software Requirements](#software-requirements)
 - [Installation](#installation)
@@ -23,35 +22,12 @@ This project is developed as part of the T3000 module at DHBW Stuttgart. The Sol
 - **Educational Tool**: Demonstrates PV-battery interactions and optimal sizing ratios
 - **Real-time Monitoring**: Tracks voltage, current, and power from solar panels
 - **Dynamic Simulation**: Simulates day/night cycles with configurable parameters
-- **Load Management**: Control up to 4 independent loads with activity logging
-- **Battery Tracking**: State of Charge (SoC) monitoring with visual feedback
 
 The system can operate in two modes:
 1. **Simulation Mode**: Uses mathematical models to simulate solar generation
-2. **Calibration Mode**: Uses real INA219 sensor data for accurate measurements
+2. **Calibration Mode**: Uses real INA219 sensor data for accurate measurements and scales them up.
 
-## ✨ Features
-
-### Hardware Control
-- **4 Independent Solar Panel Controls**: Switch panels on/off via transistors
-- **4 Load Outputs**: Manage connected loads individually
-- **Real-time Sensor Reading**: INA219 current/voltage sensor integration
-- **OLED Display**: Local status display showing panel states and measurements
-
-### Web Interface
-- **Responsive Design**: Color-coded interface (Battery: Blue, Load: Red, Modules: Green)
-- **Live Data Updates**: Real-time voltage, current, and SoC display
-- **Interactive Charts**: Historical data visualization for SoC and voltage
-- **Activity Logging**: Timestamped load change history
-- **Settings Panel**: Configure simulation parameters on-the-fly
-
-### Simulation Engine
-- **Day/Night Cycle**: Configurable cycle duration and solar intensity
-- **Battery Model**: Realistic SoC calculation with charge/discharge curves
-- **Irradiance Simulation**: Sin-wave based solar generation
-- **Panel Switching**: Automatic panel activation based on power requirements
-
-## 🛠 Hardware Requirements
+## Hardware Requirements
 
 ### PCB Assembly
 This system requires the **Solar_Monitor V2.0 PCB**. The PCB must be properly populated with all components according to the assembly instructions. The board integrates all necessary circuitry including:
@@ -93,7 +69,7 @@ Load Control:
 - INA219 Sensor: `0x40`
 - OLED Display: `0x3C`
 
-## 💻 Software Requirements
+## Software Requirements
 
 ### Development Environment
 - **PlatformIO IDE** (VS Code extension recommended)
@@ -105,7 +81,7 @@ Load Control:
 - Platform: Espressif 32
 - Board: ESP32-S3 DevKit C-1
 
-## 📦 Installation
+## Installation
 
 ### Step 1: Clone the Repository
 ```bash
@@ -176,7 +152,7 @@ pio run --target uploadfs --environment esp32-s3-devkitc-1
 4. Password: **12345678**
 5. Open browser and navigate to: **http://192.168.4.1**
 
-## ⚙️ System Configuration
+## System Configuration
 
 ### WiFi Settings
 Edit in [lib/Config/config.h](lib/Config/config.h):
@@ -211,7 +187,7 @@ Modify pin assignments in [lib/Config/config.h](lib/Config/config.h):
 #define OLED_ADDR 0x3C
 ```
 
-## 📖 Usage Guide
+## Usage Guide
 
 ### First Boot
 1. **Serial Monitor**: Open serial monitor (115200 baud) to view boot messages
@@ -255,7 +231,7 @@ Voltage: 12.5 V
 Current: 234.5 mA
 ```
 
-## 🔄 Simulation Modes
+## Simulation Modes
 
 ### Simulation Mode (Default)
 **Mathematical solar generation simulation**
@@ -302,7 +278,7 @@ SoC += (BatteryChange / Capacity) × 100
 - Scales INA219 current reading to match actual panel output
 - Formula: `ActualCurrent = (SensorReading × Multiplier) / 1000`
 
-## 🔧 Calibration
+## Calibration
 
 ### Calibrating Current Readings
 
@@ -333,7 +309,7 @@ Voltage readings from INA219 are typically accurate. If needed:
 - Verify INA219 power supply is stable (3.3V or 5V)
 - Replace sensor if readings are consistently wrong
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### ESP32 Won't Connect
 **Problem**: Can't find "Solar_Monitor" WiFi network
@@ -383,7 +359,7 @@ Voltage readings from INA219 are typically accurate. If needed:
 - **Solution 3**: Check INA219 shunt resistor value (should be 0.1Ω)
 - **Solution 4**: Verify sensor is rated for your current range
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Solar_Monitor/
@@ -474,18 +450,18 @@ Solar_Monitor/
 - Voltage and current display
 - Connection status
 
-## 📄 License
+## License
 
 This project is developed as part of academic coursework at DHBW Stuttgart. See LICENSE file for details.
 
-## 🤝 Contributing
+## Contributing
 
 This is an educational project. If you find bugs or have suggestions:
 1. Open an issue describing the problem
 2. Provide serial monitor output if applicable
 3. Include your hardware setup details
 
-## 📞 Support
+## Support
 
 For issues related to:
 - **Hardware Setup**: Check wiring diagrams and pin configurations
@@ -495,6 +471,6 @@ For issues related to:
 
 ---
 
-**Developed by**: DHBW Stuttgart Embedded Systems Program  
-**Module**: T3000 - Technical Project Work  
+**Developed by**: Anton Engels 
+**Module**: T3100 - Technical Project Work and T3000 
 **Platform**: ESP32-S3 with Arduino Framework
