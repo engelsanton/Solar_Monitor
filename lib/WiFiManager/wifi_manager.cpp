@@ -1,13 +1,14 @@
 #include "wifi_manager.h"
 
-WiFiManager::WiFiManager(const char* ssid, const char* password) 
-    : apSSID(ssid), apPassword(password) {
+WiFiManager::WiFiManager(const char* ssid, const char* password, IPAddress ip) 
+    : apSSID(ssid), apPassword(password), apIP(ip) {
 }
 
 void WiFiManager::begin() {
     Serial.println("Starting WiFi Access Point...");
     
     WiFi.mode(WIFI_AP);
+    WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
     WiFi.softAP(apSSID, apPassword);
     
     delay(100);

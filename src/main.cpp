@@ -12,7 +12,7 @@ INA ina;
 OLED oled;
 Transistor transistor;
 Simulation simulation(&ina);
-WiFiManager wifiManager("Solar_Monitor", "12345678");
+WiFiManager wifiManager("Solar_Monitor", "12345678", DEFAULT_AP_IP);
 WebServerManager webServer(&transistor, &simulation, &ina);
 
 void scanI2C() {
@@ -106,7 +106,8 @@ void loop() {
       transistor.getState4(),
       voltage,
       current,
-      ina.isFound()
+      ina.isFound(),
+      wifiManager.getIP().toString()
     );
   }
   

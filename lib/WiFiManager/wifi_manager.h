@@ -6,13 +6,14 @@
 
 class WiFiManager {
 public:
-    WiFiManager(const char* ssid, const char* password);
+    WiFiManager(const char* ssid, const char* password, IPAddress ip = IPAddress(192, 168, 4, 1));
     void begin();
     IPAddress getIP();
 
 private:
     const char* apSSID;
     const char* apPassword;
+    IPAddress apIP;
 };
 
 #endif // WIFI_MANAGER_H

@@ -691,7 +691,7 @@
 
         /* Action Button */
         .action-btn {
-            background-color: #2196f3;
+            background-color: #666;
             border: none;
             border-radius: 6px;
             padding: 8px 20px;
@@ -704,9 +704,9 @@
         }
 
         .action-btn:hover {
-            background-color: #1976d2;
+            background-color: #777;
             transform: translateY(-1px);
-            box-shadow: 0 2px 6px rgba(33, 150, 243, 0.4);
+            box-shadow: 0 2px 6px rgba(102, 102, 102, 0.4);
         }
 
         .action-btn:active {
@@ -831,20 +831,6 @@
                 <div class="chart-container">
                     <svg id="modulesChart" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet"></svg>
                 </div>
-                <div class="dashboard">
-                    <div class="dashboard-item">
-                        <span class="dashboard-label">Voltage</span>
-                        <span class="dashboard-value" id="dashboard-voltage" style="color: #4caf50;">0.0 V</span>
-                    </div>
-                    <div class="dashboard-item">
-                        <span class="dashboard-label">Current</span>
-                        <span class="dashboard-value" id="dashboard-current" style="color: #03a9f4;">0.0 A</span>
-                    </div>
-                    <div class="dashboard-item">
-                        <span class="dashboard-label">Power</span>
-                        <span class="dashboard-value" id="dashboard-power" style="color: #ff9800;">0.0 kW</span>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -963,7 +949,7 @@
                     </label>
                 </div>
                 <div class="settings-row">
-                    <span class="settings-label">Show data</span>
+                    <span class="settings-label">Show real sensor data</span>
                     <button class="action-btn" id="showRealDataBtn">Show</button>
                 </div>
                 <div class="settings-row">
@@ -971,8 +957,8 @@
                     <input type="number" class="text-input" id="simDuration" value="24" min="1" max="3600" step="1">
                 </div>
                 <div class="settings-row">
-                    <span class="settings-label">Current multiplier</span>
-                    <input type="number" class="text-input" id="currentMultiplier" value="1000" min="1" max="10000" step="1">
+                    <span class="settings-label">Current multiplier (advanced settings)</span>
+                    <input type="number" class="text-input" id="currentMultiplier" value="600" min="1" max="10000" step="1">
                 </div>
             </div>
         </div>
@@ -999,7 +985,7 @@
             previousLoadStates: null,  // Track previous load states for manual button clicks
             lastSimulationData: null,  // Track last simulation data for timestamps
             chartData: {
-                modules: {voltage: [], current: []},
+                modules: {power: []},
                 battery: {soc: []},
                 load: {produced: [], consumed: [], net: []}
             }
@@ -1236,8 +1222,7 @@
         function initializeCharts() {
             // Initialize with empty arrays (48 null values for 24h)
             for (let i = 0; i < 48; i++) {
-                state.chartData.modules.voltage.push(null);
-                state.chartData.modules.current.push(null);
+                state.chartData.modules.power.push(null);
                 state.chartData.battery.soc.push(null);
                 state.chartData.load.produced.push(null);
                 state.chartData.load.consumed.push(null);
@@ -1320,23 +1305,13 @@
         function clearChartData() {
             // Reset all data points to null (empty)
             for (let i = 0; i < 48; i++) {
-                state.chartData.modules.voltage[i] = null;
-                state.chartData.modules.current[i] = null;
+                state.chartData.modules.power[i] = null;
                 state.chartData.battery.soc[i] = null;
                 state.chartData.load.produced[i] = null;
                 state.chartData.load.consumed[i] = null;
                 state.chartData.load.net[i] = null;
             }
             // Reset dashboards
-            const dashboardVoltage = document.getElementById('dashboard-voltage');
-            if (dashboardVoltage) dashboardVoltage.textContent = '0.0 V';
-            
-            const dashboardCurrent = document.getElementById('dashboard-current');
-            if (dashboardCurrent) dashboardCurrent.textContent = '0.0 A';
-            
-            const dashboardPower = document.getElementById('dashboard-power');
-            if (dashboardPower) dashboardPower.textContent = '0.0 kW';
-            
             const dashboardSoc = document.getElementById('dashboard-soc');
             if (dashboardSoc) dashboardSoc.textContent = '0 %';
             
@@ -1497,8 +1472,7 @@
             const index = Math.floor(adjustedHour * 2); // 2 points per hour
             
             if (index >= 0 && index < 48) {
-                state.chartData.modules.voltage[index] = data.voltage || 0;
-                state.chartData.modules.current[index] = data.current || 0;
+                state.chartData.modules.power[index] = (data.powerGenerated || 0) / 1000;
                 state.chartData.battery.soc[index] = data.batteryLevel || 0;
                 state.chartData.load.produced[index] = data.powerGenerated || 0;
                 state.chartData.load.consumed[index] = data.powerLoad || 0;
@@ -1506,22 +1480,6 @@
             }
             
             // Update dashboards
-            const dashboardVoltage = document.getElementById('dashboard-voltage');
-            if (dashboardVoltage) {
-                dashboardVoltage.textContent = `${(data.voltage || 0).toFixed(1)} V`;
-            }
-            
-            const dashboardCurrent = document.getElementById('dashboard-current');
-            if (dashboardCurrent) {
-                dashboardCurrent.textContent = `${(data.current || 0).toFixed(2)} A`;
-            }
-            
-            const dashboardPower = document.getElementById('dashboard-power');
-            if (dashboardPower) {
-                const powerKW = (data.powerGenerated || 0) / 1000.0;
-                dashboardPower.textContent = `${powerKW.toFixed(2)} kW`;
-            }
-            
             const dashboardSoc = document.getElementById('dashboard-soc');
             if (dashboardSoc) {
                 dashboardSoc.textContent = `${(data.batteryLevel || 0).toFixed(1)} %`;
@@ -1596,30 +1554,20 @@
             const chartWidth = c.width - c.padding.left - c.padding.right;
             const chartHeight = c.height - c.padding.top - c.padding.bottom;
             
-            const voltageData = state.chartData.modules.voltage;
-            const currentData = state.chartData.modules.current;
+            const powerData = state.chartData.modules.power;
             
-            // Fixed scales
-            const voltageMin = 0;
-            const voltageMax = 200;  // 200V
-            const currentMin = 0;
-            const currentMax = state.activePanels * 15;  // 15A per panel
+            // Fixed scales for power (kW)
+            const powerMin = 0;
+            const powerMax = state.activePanels * 3;  // 3 kW per panel
             
             let svgContent = `<rect width="${c.width}" height="${c.height}" fill="#1e1e1e"/>`;
             
-            // Left Y-axis grid and labels (Voltage: 0-2000V)
+            // Y-axis grid and labels (Power: 0 to activePanels×3 kW)
             for (let i = 0; i <= 10; i++) {
                 const y = c.padding.top + chartHeight - (i / 10 * chartHeight);
                 svgContent += `<line x1="${c.padding.left}" y1="${y}" x2="${c.width - c.padding.right}" y2="${y}" stroke="${c.colors.grid}" stroke-width="1" opacity="0.3"/>`;
-                const voltageLabel = (voltageMin + (i / 10) * (voltageMax - voltageMin)).toFixed(0);
-                svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${voltageLabel}V</text>`;
-            }
-            
-            // Right Y-axis labels (Current: 0 to activePanels×8A)
-            for (let i = 0; i <= 10; i++) {
-                const y = c.padding.top + chartHeight - (i / 10 * chartHeight);
-                const currentLabel = (currentMin + (i / 10) * (currentMax - currentMin)).toFixed(1);
-                svgContent += `<text x="${c.width - c.padding.right + 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="start">${currentLabel}A</text>`;
+                const powerLabel = (powerMin + (i / 10) * (powerMax - powerMin)).toFixed(1);
+                svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${powerLabel}kW</text>`;
             }
             
             // X-axis (time labels - 6am to 6am cycle)
@@ -1635,53 +1583,30 @@
                 svgContent += `<text x="${x}" y="${c.height - 10}" fill="${c.colors.text}" font-size="11" text-anchor="middle">${t.label}</text>`;
             });
             
-            // Draw voltage line (only if data exists)
-            if (voltageData.some(v => v !== null)) {
-                let voltagePath = '';
+            // Draw power line (only if data exists)
+            if (powerData.some(v => v !== null)) {
+                let powerPath = '';
                 let pathStarted = false;
-                voltageData.forEach((v, i) => {
+                powerData.forEach((v, i) => {
                     if (v !== null) {
-                        const x = c.padding.left + (i / (voltageData.length - 1)) * chartWidth;
-                        const y = c.padding.top + chartHeight - ((v - voltageMin) / (voltageMax - voltageMin)) * chartHeight;
+                        const x = c.padding.left + (i / (powerData.length - 1)) * chartWidth;
+                        const y = c.padding.top + chartHeight - ((v - powerMin) / (powerMax - powerMin)) * chartHeight;
                         if (!pathStarted) {
-                            voltagePath += `M ${x} ${y} `;
+                            powerPath += `M ${x} ${y} `;
                             pathStarted = true;
                         } else {
-                            voltagePath += `L ${x} ${y} `;
+                            powerPath += `L ${x} ${y} `;
                         }
                     }
                 });
                 if (pathStarted) {
-                    svgContent += `<path d="${voltagePath}" fill="none" stroke="${c.colors.voltage}" stroke-width="2"/>`;
-                }
-            }
-            
-            // Draw current line (only if data exists)
-            if (currentData.some(v => v !== null)) {
-                let currentPath = '';
-                let pathStarted = false;
-                currentData.forEach((v, i) => {
-                    if (v !== null) {
-                        const x = c.padding.left + (i / (currentData.length - 1)) * chartWidth;
-                        const y = c.padding.top + chartHeight - ((v - currentMin) / (currentMax - currentMin)) * chartHeight;
-                        if (!pathStarted) {
-                            currentPath += `M ${x} ${y} `;
-                            pathStarted = true;
-                        } else {
-                            currentPath += `L ${x} ${y} `;
-                        }
-                    }
-                });
-                if (pathStarted) {
-                    svgContent += `<path d="${currentPath}" fill="none" stroke="${c.colors.current}" stroke-width="2"/>`;
+                    svgContent += `<path d="${powerPath}" fill="none" stroke="#ff9800" stroke-width="2"/>`;
                 }
             }
             
             // Legend
-            svgContent += `<rect x="20" y="10" width="15" height="3" fill="${c.colors.voltage}"/>`;
-            svgContent += `<text x="40" y="15" fill="${c.colors.text}" font-size="12">Voltage</text>`;
-            svgContent += `<rect x="120" y="10" width="15" height="3" fill="${c.colors.current}"/>`;
-            svgContent += `<text x="140" y="15" fill="${c.colors.text}" font-size="12">Current</text>`;
+            svgContent += `<rect x="20" y="10" width="15" height="3" fill="#ff9800"/>`;
+            svgContent += `<text x="40" y="15" fill="${c.colors.text}" font-size="12">Power (kW)</text>`;
             
             svg.innerHTML = svgContent;
         }

@@ -1,4 +1,5 @@
 #include "simulation.h"
+#include "config.h"
 
 Simulation::Simulation(INA* inaRef) : ina(inaRef) {
     // Initialize all states to false
@@ -27,7 +28,7 @@ Simulation::Simulation(INA* inaRef) : ina(inaRef) {
     running = false;
     simulateSun = false;
     autoToggleLoads = false;
-    currentMultiplier = 1000.0;  // Default calibration multiplier
+    currentMultiplier = DEFAULT_CURRENT_MULTIPLIER;  // Use default from config.h
     startTime = 0;
     lastUpdateTime = 0;
     durationSeconds = 48;

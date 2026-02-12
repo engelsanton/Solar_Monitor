@@ -19,4 +19,10 @@
 #define TRANSISTOR_3 17
 #define TRANSISTOR_4 18
 
+// WiFi Access Point Settings
+#define DEFAULT_AP_IP IPAddress(192, 168, 4, 1)
+
+// Simulation Settings
+#define DEFAULT_CURRENT_MULTIPLIER 600.0
+
 #endif // CONFIG_H

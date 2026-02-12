@@ -41,7 +41,7 @@ void OLED::showBootScreen() {
     oledDisplay.display();
 }
 
-void OLED::showStatus(int panel1, int panel2, int panel3, int panel4, float voltage, float current, bool inaAvailable) {
+void OLED::showStatus(int panel1, int panel2, int panel3, int panel4, float voltage, float current, bool inaAvailable, String ipAddress) {
     if (!found) return;
     
     oledDisplay.clearDisplay();
@@ -49,6 +49,9 @@ void OLED::showStatus(int panel1, int panel2, int panel3, int panel4, float volt
     oledDisplay.setTextColor(SSD1306_WHITE);
     oledDisplay.setCursor(0, 0);
     
+    // IP Address
+    oledDisplay.print("IP: ");
+    oledDisplay.println(ipAddress);
     // Panel Status
     oledDisplay.println("=== PANEL STATUS ===");
     oledDisplay.print("P1:");
@@ -61,7 +64,6 @@ void OLED::showStatus(int panel1, int panel2, int panel3, int panel4, float volt
     oledDisplay.println(panel4 ? "ON " : "OFF");
     
     if (inaAvailable) {
-        oledDisplay.println("");
         oledDisplay.println("=== SENSOR DATA ===");
         
         // Values below 1 are set to 0
@@ -74,7 +76,6 @@ void OLED::showStatus(int panel1, int panel2, int panel3, int panel4, float volt
         oledDisplay.print(current, 1);
         oledDisplay.println(" mA");
     } else {
-        oledDisplay.println("");
         oledDisplay.println("INA219 not found");
     }
     
