@@ -17,7 +17,7 @@ A comprehensive ESP32-based solar monitoring and simulation system for education
 
 ## 🎯 Overview
 
-This project is developed as part of the T3000 module at DHBW Stuttgart. The Solar Monitor system provides:
+This project is developed as part of the T3100 module at DHBW Stuttgart. The Solar Monitor system provides:
 
 - **Educational Tool**: Demonstrates PV-battery interactions and optimal sizing ratios
 - **Real-time Monitoring**: Tracks voltage, current, and power from solar panels
@@ -44,25 +44,20 @@ This system requires the **Solar_Monitor V2.0 PCB**. The PCB must be properly po
 | **Microcontroller** | ESP32-S3 DevKit C-1 | Main controller |
 | **Current Sensor** | INA219 (I2C) | Measures voltage and current |
 | **Display** | SSD1306 OLED (128x64, I2C) | Local status display |
-| **Transistors** | 4x N-Channel MOSFETs | Solar panel switching |
+| **Transistors** | 4x N-Channel MOSFETs BS170 and 4x P-Channel MOSFETs IRF9540N | Solar panel switching |
+| **Solar Panels**| 4x Solar Panels 5V 100mA | For measurements| 
 
 ### Pin Configuration
 ```
 I2C Bus:
-- SDA: GPIO 21
-- SCL: GPIO 22
+- SDA: GPIO 9
+- SCL: GPIO 8
 
-Transistor Control:
-- Panel 1: GPIO 13
-- Panel 2: GPIO 12
-- Panel 3: GPIO 14
-- Panel 4: GPIO 27
-
-Load Control:
-- Load 1: GPIO 25
-- Load 2: GPIO 26
-- Load 3: GPIO 32
-- Load 4: GPIO 33
+Transistor Control (Panel Switching):
+- Panel 1: GPIO 15
+- Panel 2: GPIO 16
+- Panel 3: GPIO 17
+- Panel 4: GPIO 18
 ```
 
 ### I2C Addresses
@@ -85,7 +80,7 @@ Load Control:
 
 ### Step 1: Clone the Repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/engelsanton/Solar_Monitor.git
 cd Solar_Monitor
 ```
 
@@ -150,7 +145,7 @@ pio run --target uploadfs --environment esp32-s3-devkitc-1
 2. Wait for the WiFi Access Point to start (~5 seconds)
 3. Connect to WiFi network: **Solar_Monitor**
 4. Password: **12345678**
-5. Open browser and navigate to: **http://192.168.4.1**
+5. Open browser and navigate to: **http://192.168.4.1** (or if changed to the ip address declared in config.h)
 
 ## System Configuration
 
@@ -162,202 +157,417 @@ Edit in [lib/Config/config.h](lib/Config/config.h):
 ```
 
 ### Hardware Configuration
-Modify pin assignments in [lib/Config/config.h](lib/Config/config.h):
+All hardware settings are configured in [lib/Config/config.h](lib/Config/config.h):
+
 ```cpp
-// I2C pins
-#define OLED_SDA 21
-#define OLED_SCL 22
+// I2C Pin Configuration
+#define OLED_SDA 9
+#define OLED_SCL 8
 
-// Panel control pins
-#define TRANS1_PIN 13
-#define TRANS2_PIN 12
-#define TRANS3_PIN 14
-#define TRANS4_PIN 27
-
-// Load control pins
-#define LOAD1_PIN 25
-#define LOAD2_PIN 26
-#define LOAD3_PIN 32
-#define LOAD4_PIN 33
-```
-
-### I2C Addresses
-```cpp
-#define INA219_ADDR 0x40
+// I2C Addresses
 #define OLED_ADDR 0x3C
+#define INA219_ADDR 0x40
+
+// Transistor GPIO Pins (Panel Switching)
+#define TRANSISTOR_1 15
+#define TRANSISTOR_2 16
+#define TRANSISTOR_3 17
+#define TRANSISTOR_4 18
+
+// WiFi Access Point Settings
+#define DEFAULT_AP_IP IPAddress(192, 168, 4, 1)
+
+// Simulation Settings
+#define DEFAULT_CURRENT_MULTIPLIER 600.0
 ```
+
+To modify WiFi credentials, edit in [src/main.cpp](src/main.cpp):
+```cpp
+WiFiManager wifiManager("Solar_Monitor", "12345678", DEFAULT_AP_IP);
+```
+
 
 ## Usage Guide
 
 ### First Boot
 1. **Serial Monitor**: Open serial monitor (115200 baud) to view boot messages
-2. **I2C Scan**: System automatically scans for connected devices
+2. **I2C Scan**: System automatically scans for connected devices (OLED at 0x3C, INA219 at 0x40)
 3. **Component Status**: Check if OLED and INA219 are detected
-4. **WiFi AP**: Note the IP address (usually 192.168.4.1)
+4. **WiFi AP**: System starts Access Point "Solar_Monitor" with password "12345678"
+5. **IP Address**: Default is 192.168.4.1 (configurable in [config.h](lib/Config/config.h))
 
-### Web Interface Navigation
+### Connecting to the System
+1. **Connect to WiFi**: 
+   - Network: `Solar_Monitor`
+   - Password: `12345678`
+2. **Open Web Interface**:
+   - Navigate to: `http://192.168.4.1` (or your configured IP)
+   - The web interface loads automatically
 
-#### Modules Page (Green Theme)
-- **Manual Control**: Click P1-P4 buttons to toggle individual panels
-- **Real-time Status**: Panel buttons light up when active
-- **Simulation Display**: Shows which panels are currently generating power
+### Web Interface Overview
 
-#### Battery Page (Blue Theme)
-- **State of Charge**: Live SoC percentage in page title
-- **SoC Meter**: Visual battery level indicator
-- **Historical Chart**: Blue line showing SoC over time
+The interface has four main pages accessible via bottom navigation:
 
-#### Load Page (Red Theme)
-- **Current Load**: Total load display in page title
-- **4 Load Switches**: Toggle individual loads on/off
-- **Activity Log**: Timestamped history of load changes
-- **Clear Log**: Button to reset activity history
+#### 1. Modules Page (Green Theme)
+**Purpose**: Control solar panels and monitor power generation
 
-#### Settings Page
-- **Simulation Control**: Start/Stop/Reset simulation
-- **Mode Selection**: Toggle between simulation and calibration modes
-- **Time Settings**: Adjust day/night cycle duration
-- **Power Settings**: Configure battery capacity and load values
-- **Solar Settings**: Set max irradiance and panel power
-- **Calibration**: Set current multiplier for sensor accuracy
+**Features**:
+- **Panel Buttons (P1-P4)**: Toggle individual solar panels on/off
+  - Each panel: 2.5 kWp rated power
+  - Click to activate/deactivate before or during simulation
+  - Active panels show green highlight
+- **Power Chart**: Real-time power generation in kilowatts (kW)
+  - Y-axis: 0 to (active panels × 3 kW)
+  - X-axis: Time from 6am to 6am (24-hour cycle)
+  - Orange line shows power output
+- **Play/Stop Button** (top right): Start/stop simulation
+- **Report Button** (top right): View simulation summary (appears after simulation completes)
+
+**How to Use**:
+1. Select which panels to activate (at least 1 required)
+2. Press Play button to start simulation
+3. Watch real-time power generation curve
+4. Panels automatically generate power based on sun simulation
+
+#### 2. Battery Page (Blue Theme)
+**Purpose**: Manage battery storage and monitor State of Charge
+
+**Features**:
+- **Cell Buttons (1-4)**: Toggle battery cells on/off
+  - Each cell: 5 kWh capacity
+  - More cells = larger total storage capacity
+  - Active cells show blue highlight
+- **SoC Chart**: State of Charge over 24-hour period
+  - Y-axis: 0% to 100%
+  - Blue line shows battery level
+  - Starts at 0% and charges from solar panels
+- **Dashboard**: Current SoC percentage displayed in real-time
+
+**How to Use**:
+1. Activate desired number of cells before starting simulation
+2. More cells provide more storage but cost more
+3. Monitor how well your battery configuration handles the daily cycle
+
+#### 3. Load Page (Red Theme)
+**Purpose**: Control household loads and energy consumption
+
+**Features**:
+- **6 Configurable Loads**:
+  - **Light**: 100 W
+  - **Fridge**: 150 W
+  - **AC**: 2000 W
+  - **Dryer**: 500 W
+  - **Dishwasher**: 1000 W
+  - **TV**: 300 W
+- **Power Charts**: Three lines showing:
+  - Green: Power produced (from panels)
+  - Red: Power consumed (by loads)
+  - Blue: Net power (produced - consumed)
+- **Manual Control**: Click load buttons to turn on/off manually during simulation
+- **Auto Toggle** (in Settings): Automatically manages loads based on available power
+
+**How to Use**:
+1. Click loads to activate them during simulation
+2. Enable "Auto Toggle Loads" in Settings for automatic management
+3. Watch how loads affect battery charging/discharging
+
+#### 4. Settings Page
+**Purpose**: Configure simulation parameters and view real sensor data
+
+**Main Controls**:
+- **Simulate Sun**: Enable/disable day/night cycle simulation
+  - ON: Uses mathematical sun curve (default)
+  - OFF: Constant irradiance
+- **Auto Toggle Loads**: Automatically manage loads based on power availability
+  - ON: System turns loads on/off intelligently (default)
+  - OFF: Manual load control only
+- **Simulation Duration**: Seconds per simulated day (1-3600s, default: 24s)
+  - Lower values = faster simulation
+  - Higher values = more detailed observation
+
+**Advanced Settings**:
+- **Current Multiplier**: Calibration factor for sensor readings (default: 600)
+  - Range: 1-10000
+  - Used when working with real hardware sensors
+  - Adjust if measured current doesn't match expectations
+
+**Real Sensor Data**:
+- **Show real sensor data** button: Opens modal with live INA219 readings
+  - Displays: Bus voltage (V) and current (mA)
+  - Shows active panel states
+  - Use for hardware calibration and verification
 
 ### OLED Display
-The local display shows:
+
+The local OLED display (if connected) shows:
 ```
-== PANEL STATUS ==
+IP: 192.168.4.1
+=== PANEL STATUS ===
 P1:ON  P2:OFF
 P3:ON  P4:OFF
-Voltage: 12.5 V
+=== SENSOR DATA ===
 Current: 234.5 mA
 ```
 
+**Note**: Display only shows current, not voltage. IP address is shown at the top for easy connection.
+
 ## Simulation Modes
 
-### Simulation Mode (Default)
-**Mathematical solar generation simulation**
+### How the Simulation Works
 
-**How it works:**
-1. Simulates day/night cycle using sin wave
-2. Automatically activates panels based on load demand
-3. Calculates battery SoC based on generation vs consumption
-4. Updates every 100ms
+The system simulates a complete 24-hour solar day cycle, from 6:00 AM to 6:00 AM the next day.
 
-**Configuration Parameters:**
-- **Day/Night Duration**: 10-300 seconds (default: 60s)
-- **Max Solar Irradiance**: 100-1000 W/m² (default: 1000)
-- **Panel Power**: Each panel = 10W (configurable)
-- **Battery Capacity**: 1000-10000 mAh (default: 5000)
-- **Load Power**: 1-50W per load (default: 5W)
+**Key Features**:
+- **Day/Night Cycle**: Mathematical simulation using sine wave for realistic sun movement
+- **Configurable Speed**: Complete 24-hour cycle runs in 24 seconds by default (adjustable 1-3600s)
+- **Real-time Updates**: All charts and displays update continuously
+- **Energy Tracking**: Records total energy produced, consumed, and grid interaction
 
-**Simulation Formula:**
-```
-Irradiance = MaxIrradiance × sin²(π × t / CycleDuration)
-PanelCurrent = (Irradiance × PanelPower × ActivePanels) / Voltage
-BatteryChange = PanelCurrent - LoadCurrent
-SoC += (BatteryChange / Capacity) × 100
-```
+**Simulation Flow**:
+1. **Start**: Click Play button (top right) after selecting panels and cells
+2. **Time Display**: Header shows current simulated time (e.g., "6 am", "12 pm")
+3. **Power Generation**: 
+   - Panels generate power based on sun position
+   - Peak generation at solar noon (12 pm)
+   - Zero generation at night (6 pm - 6 am)
+4. **Battery Management**:
+   - Excess solar power charges battery
+   - Insufficient solar draws from battery
+   - Battery starts at 0% SoC
+5. **Load Management**:
+   - Manual: Click load buttons to control
+   - Auto: System manages loads based on available power
+6. **Completion**: After 24 simulated hours, Report button appears with summary
 
-### Calibration Mode
-**Real sensor data acquisition**
+### Configuration Options
 
-**Purpose:**
-- Read actual voltage and current from INA219 sensor
-- Calibrate simulation parameters against real hardware
-- Validate panel output measurements
+**Simulate Sun** (Settings Page):
+- **Enabled** (default): Uses day/night cycle with realistic sun curve
+- **Disabled**: Constant solar irradiance for testing
 
-**How to use:**
-1. Connect real solar panels to INA219 sensor input
-2. Go to Settings page
-3. Toggle "Simulation Mode" OFF
-4. Adjust "Current Multiplier" to calibrate readings
-5. Click "Real Data" to view live sensor values
+**Auto Toggle Loads** (Settings Page):
+- **Enabled** (default): System automatically manages loads intelligently
+  - Turns loads on when sufficient power available
+  - Turns loads off to prevent battery drain
+- **Disabled**: Manual load control only via Load Page buttons
 
-**Current Multiplier:**
-- Range: 1-10000
-- Default: 1000
-- Scales INA219 current reading to match actual panel output
-- Formula: `ActualCurrent = (SensorReading × Multiplier) / 1000`
+**Simulation Duration** (Settings Page):
+- **Range**: 1-3600 seconds per 24-hour day
+- **Default**: 24 seconds
+- **Purpose**: Control simulation speed for observation or demonstration
+- **Example**: 120 seconds = 5 minutes for complete day cycle
+
+### Understanding the Charts
+
+**Modules Page - Power Chart**:
+- **Orange Line**: Solar power generation in kW
+- **Shape**: Bell curve (sunrise → peak → sunset) when "Simulate Sun" enabled
+- **Scale**: Automatic based on active panels (each panel max ~3 kW)
+
+**Battery Page - SoC Chart**:
+- **Blue Line**: Battery State of Charge (0-100%)
+- **Rising**: Battery charging from excess solar
+- **Falling**: Battery discharging to supply loads
+- **Goal**: Keep battery in healthy range (20-80% ideally)
+
+**Load Page - Energy Flow Chart**:
+- **Green Line**: Power produced by solar panels
+- **Red Line**: Power consumed by active loads
+- **Blue Line**: Net power (positive = charging, negative = discharging/grid)
+- **Analysis**: When red exceeds green, battery discharges or grid import needed
+
+### Report Summary
+
+After simulation completes, click orange Report button (top right) to view:
+- **Energy Statistics**:
+  - Total energy consumed (kWh)
+  - Total energy from grid (kWh) - when solar + battery insufficient
+  - Total energy to grid (kWh) - excess solar not stored
+- **System Performance**: Understand if your panel/battery ratio is optimal
 
 ## Calibration
 
-### Calibrating Current Readings
+### Working with Real Hardware
 
-1. **Set up test conditions:**
-   - Connect known current source or solar panel
-   - Measure actual current with multimeter
-   - Note the expected value
+The system can interface with real solar panels via the INA219 sensor to measure actual voltage and current. The simulation uses these measurements scaled by a calibration factor.
 
-2. **Access calibration:**
-   - Open web interface → Settings
-   - Disable "Simulation Mode"
-   - Click "Real Data" button
+### Current Multiplier Explained
 
-3. **Adjust multiplier:**
-   - Compare web interface reading to multimeter
-   - Calculate: `NewMultiplier = CurrentMultiplier × (ExpectedValue / DisplayedValue)`
-   - Enter new value in "Current Multiplier" field
-   - Save settings
+**Purpose**: Scales small sensor readings to meaningful simulation values
 
-4. **Verify:**
-   - Check Real Data modal again
-   - Reading should now match multimeter
-   - If not, repeat adjustment
+**Default Value**: 600 (configured in [config.h](lib/Config/config.h))
+- Range: 1-10000
+- Can be changed in Settings page under "Current multiplier (advanced settings)"
+- Changes apply immediately to simulation
 
-### Voltage Calibration
-Voltage readings from INA219 are typically accurate. If needed:
-- Check wiring connections
-- Verify INA219 power supply is stable (3.3V or 5V)
-- Replace sensor if readings are consistently wrong
+**Why Scaling is Needed**:
+- Small solar panels produce milliamps (mA)
+- Simulation represents kilowatt-scale systems
+- Multiplier bridges the gap between hardware and simulation scale
+
+### Viewing Real Sensor Data
+
+1. **Access the Modal**:
+   - Go to Settings page
+   - Click "Show real sensor data" button (gray button)
+   - Modal opens showing live readings
+
+2. **Information Displayed**:
+   - **Bus Voltage**: Direct voltage measurement from INA219 (Volts)
+   - **Current**: Current measurement from INA219 (milliamps)
+   - **Panel Status**: Shows which panels (P1-P4) are currently active
+   - Note: A modal cannot be opened during an active simulation
+
+3. **How It Works**:
+   - INA219 continuously measures connected hardware
+   - Values update in real-time
+   - Panel switching (via transistors) is reflected in measurements
+
+### Calibration Procedure
+
+**If you have real solar panels connected:**
+
+1. **Measure Reference Values**:
+   - Connect multimeter to measure actual current
+   - Note expected current under test conditions
+   - Record INA219 raw reading from "Show real sensor data"
+
+2. **Calculate Multiplier**:
+   ```
+   New Multiplier = Current Multiplier × (Expected Current / Measured Current)
+   ```
+   
+3. **Apply Calibration**:
+   - Go to Settings page
+   - Locate "Current multiplier (advanced settings)"
+   - Enter calculated value
+   - Press Enter or click outside field to apply
+
+4. **Verify**:
+   - Click "Show real sensor data" again
+   - Check if readings now match expectations
+   - Repeat adjustment if needed
+
+### Without Real Hardware
+
+If no INA219 sensor is connected:
+- System detects "INA219 not found" during boot
+- Simulation still works using mathematical models
+- "Show real sensor data" will show zero readings
+- Current multiplier setting has no effect on pure simulation
 
 ## Troubleshooting
 
 ### ESP32 Won't Connect
 **Problem**: Can't find "Solar_Monitor" WiFi network
-- **Solution 1**: Wait 10-15 seconds after boot
-- **Solution 2**: Check serial monitor for "Access Point started" message
-- **Solution 3**: Power cycle the ESP32
-- **Solution 4**: Verify WiFi is enabled on your device
+
+**Solutions**:
+- **Wait**: Give 10-15 seconds after boot for AP to start
+- **Check Serial Monitor**: Look for "Access Point started: Solar_Monitor" and "IP Address: 192.168.4.1"
+- **Power Cycle**: Disconnect and reconnect power to ESP32
+- **Verify WiFi**: Ensure WiFi is enabled on your device (phone/laptop)
+- **Range**: Move closer to ESP32 module
 
 ### OLED Display Not Working
-**Problem**: "OLED initialization failed" in serial monitor
-- **Solution 1**: Check I2C wiring (SDA → 21, SCL → 22)
-- **Solution 2**: Verify OLED address is 0x3C (check with I2C scanner)
-- **Solution 3**: Try different I2C pins if hardware is different
-- **Solution 4**: Check OLED power supply (3.3V or 5V depending on module)
+**Problem**: "OLED initialization failed" in serial monitor or blank screen
+
+**Solutions**:
+- **Check Wiring**: 
+  - SDA → GPIO 9
+  - SCL → GPIO 8
+  - VCC → 3.3V or 5V (check OLED module specs)
+  - GND → GND
+- **Verify Address**: OLED should be at I2C address 0x3C (check with I2C scanner)
+- **Wrong Address**: If different address, update `OLED_ADDR` in [config.h](lib/Config/config.h)
+- **Test I2C**: Run I2C scanner code to verify display responds
+- **Power Supply**: Ensure stable power (some OLEDs need 5V, others 3.3V)
 
 ### INA219 Not Detected
-**Problem**: "INA219 initialization failed"
-- **Solution 1**: Verify I2C connections share same bus as OLED
-- **Solution 2**: Check sensor address (default 0x40)
-- **Solution 3**: Test with I2C scanner code
-- **Solution 4**: Ensure sensor has proper power supply
+**Problem**: "INA219 initialization failed" in serial monitor
+
+**Solutions**:
+- **Verify I2C Connection**: INA219 shares same I2C bus as OLED
+  - SDA → GPIO 9
+  - SCL → GPIO 8
+- **Check Address**: Default is 0x40 (check with I2C scanner if different)
+- **Power Supply**: Ensure INA219 has proper 3.3V or 5V power
+- **Pull-up Resistors**: I2C bus needs 4.7kΩ pull-ups on SDA and SCL
+- **Not Critical**: System works without INA219 (simulation mode only)
 
 ### Web Interface Not Loading
 **Problem**: Browser can't reach 192.168.4.1
-- **Solution 1**: Verify WiFi connection to "Solar_Monitor"
-- **Solution 2**: Try http://192.168.4.1 (not https)
-- **Solution 3**: Clear browser cache
-- **Solution 4**: Check if filesystem was uploaded (`pio run --target uploadfs`)
+
+**Solutions**:
+- **Verify WiFi Connection**: Must be connected to "Solar_Monitor" network
+- **Use HTTP**: Type `http://192.168.4.1` (not https://)
+- **Clear Cache**: Use Ctrl+F5 for hard refresh
+- **Check Filesystem Upload**: 
+  ```bash
+  pio run --target uploadfs --environment esp32-s3-devkitc-1
+  ```
+- **Try Different Browser**: Chrome, Firefox, or Edge
+- **Custom IP**: If you changed DEFAULT_AP_IP in config.h, use that address
 
 ### Panels Not Switching
 **Problem**: Panel buttons don't control transistors
-- **Solution 1**: Check transistor gate connections to GPIO pins
-- **Solution 2**: Verify transistor type (N-Channel MOSFET recommended)
-- **Solution 3**: Check pull-down resistors on gates
-- **Solution 4**: Measure gate voltage with multimeter (should be 3.3V when ON)
 
-### Simulation Stuck
-**Problem**: Time doesn't advance, values frozen
-- **Solution 1**: Click "Reset Simulation" in Settings
-- **Solution 2**: Refresh web page
-- **Solution 3**: Restart ESP32
+**Solutions**:
+- **Check Transistor Connections**:
+  - Panel 1 gate → GPIO 15
+  - Panel 2 gate → GPIO 16
+  - Panel 3 gate → GPIO 17
+  - Panel 4 gate → GPIO 18
+- **Verify Transistor Type**: N-channel MOSFETs (BS170) and P-channel (IRF9540N) on PCB
+- **Check PCB Assembly**: Ensure all MOSFETs are correctly soldered
+- **Measure Gate Voltage**: Should be 3.3V when button is "ON", 0V when "OFF"
+- **Test GPIOs**: Use simple LED test sketch to verify GPIO pins work
+- **Pull-down Resistors**: Gates should have pull-down resistors to prevent floating
 
-### Current Readings Too High/Low
-**Problem**: Displayed current doesn't match expectations
-- **Solution 1**: Enter Calibration Mode
-- **Solution 2**: Adjust Current Multiplier (default: 1000)
-- **Solution 3**: Check INA219 shunt resistor value (should be 0.1Ω)
-- **Solution 4**: Verify sensor is rated for your current range
+### Simulation Won't Start
+**Problem**: Clicking Play button does nothing
+
+**Solutions**:
+- **Check Browser Console**: Press F12, look for JavaScript errors
+- **Hard Refresh**: Use Ctrl+F5 to reload page completely
+- **Re-upload Filesystem**: 
+  ```bash
+  pio run --target uploadfs --environment esp32-s3-devkitc-1
+  ```
+- **Select Panels**: At least 1 panel must be active (error shown if none selected)
+- **Serial Monitor**: Check for error messages from ESP32
+- **Restart ESP32**: Power cycle the device
+
+### Simulation Data Not Updating
+**Problem**: Time frozen, charts not drawing, values stuck
+
+**Solutions**:
+- **Refresh Page**: Use Ctrl+F5 to clear cache and reload
+- **Check Serial Monitor**: Look for errors or crash messages
+- **Stop and Restart**: Click Stop, wait 2 seconds, click Play again
+- **ESP32 Crash**: Power cycle device if completely frozen
+- **Memory Issue**: Simulation runs continuously; restart if running for too long
+
+### Current Readings Incorrect
+**Problem**: Displayed current doesn't match real measurements
+
+**Solutions**:
+- **No Hardware Connected**: System works in simulation-only mode
+- **INA219 Not Found**: Check troubleshooting section above
+- **Calibration Needed**: Adjust "Current multiplier (advanced settings)" in Settings
+  - Default: 600
+  - Higher value = higher displayed current
+  - Lower value = lower displayed current
+- **Shunt Resistor**: Verify INA219 has correct shunt resistor (usually 0.1Ω)
+- **Measurement Range**: INA219 limited to ±3.2A with 0.1Ω shunt
+
+### OLED Shows Wrong IP
+**Problem**: IP address on OLED doesn't match expected
+
+**Solution**:
+- **Check config.h**: Verify DEFAULT_AP_IP setting
+- **Default**: Should be 192.168.4.1
+- **After Changing**: Re-compile and upload firmware
+- **Use Displayed IP**: Always use the IP shown on OLED display
 
 ## Project Structure
 
@@ -408,47 +618,67 @@ Solar_Monitor/
 
 ### Key Components
 
-**main.cpp**: System initialization, main loop coordination
-- I2C bus setup and device scanning
-- WiFi AP initialization
+**main.cpp**: System initialization and main loop
+- I2C bus setup (GPIO 9=SDA, GPIO 8=SCL)
+- I2C device scanning (OLED at 0x3C, INA219 at 0x40)
+- WiFi Access Point initialization
 - Web server startup
-- OLED display updates
-- Component integration
+- OLED display updates (100ms interval)
+- Component integration and coordination
 
-**simulation.cpp**: Core simulation logic
-- Day/night cycle calculation
-- Battery SoC management
-- Panel activation logic
-- Power flow calculation
-- Calibration mode handling
+**simulation.cpp**: Core simulation engine
+- Day/night cycle calculation (6am-6am, 24-hour)
+- Solar irradiance modeling (sine wave)
+- Battery State of Charge management (0-100%)
+- Panel power generation calculation
+- Load power consumption tracking
+- Auto-toggle load management
+- Energy statistics (grid import/export)
+- Current multiplier scaling
 
-**web_server.cpp**: HTTP endpoints
-- `/` - Serves main web interface
-- `/status` - Returns JSON status data
-- `/toggle-panel` - Panel control endpoint
-- `/toggle-load` - Load control endpoint
-- `/simulation/start` - Start simulation
-- `/simulation/stop` - Pause simulation
-- `/simulation/reset` - Reset to initial state
-- `/settings` - Update configuration
-- `/real/data` - Get sensor readings
+**web_server.cpp**: HTTP server and API endpoints
+- **GET /**: Serves main web interface (index.html)
+- **GET /status**: Returns transistor states JSON
+- **POST /set**: Control transistors (panels) - params: transistor, state
+- **POST /simulation**: Start/stop simulation - params: action, duration, simulateSun
+- **GET /simulation/data**: Get current simulation data JSON
+- **POST /simulation/panel**: Set panel state - params: panel, state
+- **POST /simulation/cell**: Set battery cell state - params: cell, state
+- **POST /simulation/load**: Set load state - params: load, state
+- **POST /simulation/autotoggle**: Enable/disable auto load management - params: enable
+- **POST /simulation/currentmultiplier**: Set calibration multiplier - params: multiplier
+- **GET /simulation/overview**: Get simulation summary after completion
+- **GET /real/data**: Get live INA219 sensor readings
 
-**transistor.cpp**: GPIO control
-- Panel ON/OFF switching
-- Load ON/OFF switching
-- State management
+**transistor.cpp**: Hardware GPIO control
+- Panel switching via MOSFETs (GPIO 15-18)
+- State management for 4 panels
+- Digital HIGH/LOW control
 
-**ina.cpp**: Sensor interface
-- INA219 initialization
-- Voltage measurement (getBusVoltage)
-- Current measurement (getCurrent)
+**ina.cpp**: INA219 sensor interface
+- I2C communication (address 0x40)
+- Voltage measurement (getBusVoltage) - returns Volts
+- Current measurement (getCurrent) - returns milliamps
+- Power calculation (getPower) - returns milliwatts
 - Device detection (isFound)
 
-**oled.cpp**: Display management
-- Boot screen
-- Status display with panel states
-- Voltage and current display
-- Connection status
+**oled.cpp**: SSD1306 OLED display driver
+- I2C communication (address 0x3C)
+- 128x64 pixel resolution
+- Boot splash screen
+- Real-time status display:
+  - IP address (top line)
+  - Panel states (P1-P4 ON/OFF)
+  - Current sensor reading (mA)
+  - INA219 connection status
+- 180° rotation for mounting orientation
+
+**wifi_manager.cpp**: WiFi Access Point management
+- Creates "Solar_Monitor" network
+- Configurable password (default: "12345678")
+- Configurable IP address (default: 192.168.4.1)
+- Subnet: 255.255.255.0
+- Returns current IP for display
 
 ## License
 
