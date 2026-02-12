@@ -6,11 +6,11 @@ OLED::OLED() : oledDisplay(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1), found(false)
 
 bool OLED::begin() {
     if (!oledDisplay.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
-        Serial.println("OLED-Initialisierung fehlgeschlagen!");
+        Serial.println("OLED initialization failed!");
         found = false;
     } else {
-        Serial.println("OLED erfolgreich initialisiert!");
-        oledDisplay.setRotation(2);  // 180 Grad Rotation
+        Serial.println("OLED initialized successfully!");
+        oledDisplay.setRotation(2);  // 180 degree rotation
         found = true;
     }
     return found;
@@ -64,7 +64,7 @@ void OLED::showStatus(int panel1, int panel2, int panel3, int panel4, float volt
         oledDisplay.println("");
         oledDisplay.println("=== SENSOR DATA ===");
         
-        // Werte unter 1 werden auf 0 gesetzt
+        // Values below 1 are set to 0
 
         if (current < 1.0) current = 0.0;
         

@@ -52,28 +52,21 @@ void WebServerManager::handleRoot() {
 }
 
 void WebServerManager::handleSetTransistor() {
-    Serial.println("[DEBUG] handleSetTransistor() - Start");
-    
     if (!server.hasArg("transistor") || !server.hasArg("state")) {
-        Serial.println("[DEBUG] handleSetTransistor() - Missing parameters");
         server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
         return;
     }
     
     int transistorNum = server.arg("transistor").toInt();
     int state = server.arg("state").toInt();
-    Serial.print("[DEBUG] handleSetTransistor() - Transistor ");
-    Serial.print(transistorNum);
-    Serial.print(", State: ");
-    Serial.println(state);
     
-    // Aktuellen Zustand abrufen
+    // Get current state
     int t1 = transistor->getState1();
     int t2 = transistor->getState2();
     int t3 = transistor->getState3();
     int t4 = transistor->getState4();
     
-    // Gewünschten Transistor aktualisieren
+    // Update desired transistor
     switch(transistorNum) {
         case 1: t1 = state; break;
         case 2: t2 = state; break;
@@ -86,7 +79,6 @@ void WebServerManager::handleSetTransistor() {
     
     // Neuen Zustand setzen
     transistor->setState(t1, t2, t3, t4);
-    // WICHTIG: GPIO-Pins aktualisieren!
     transistor->update();
     
     String response = "{\"success\":true,\"transistor\":" + String(transistorNum) + 
@@ -94,12 +86,6 @@ void WebServerManager::handleSetTransistor() {
     
     server.sendHeader("Connection", "close");
     server.send(200, "application/json", response);
-    
-    Serial.print("Transistor ");
-    Serial.print(transistorNum);
-    Serial.print(" auf ");
-    Serial.print(state ? "AN" : "AUS");
-    Serial.println(" geschaltet (GPIO aktualisiert)");
 }
 
 void WebServerManager::handleGetStatus() {
@@ -145,10 +131,7 @@ void WebServerManager::handleNotFound() {
 }
 
 void WebServerManager::handleSimulation() {
-    Serial.println("[DEBUG] handleSimulation() - Start");
-    
     if (!server.hasArg("action")) {
-        Serial.println("[DEBUG] handleSimulation() - Missing action parameter");
         server.sendHeader("Connection", "close");
         server.send(400, "application/json", "{\"error\":\"Missing action parameter\"}");
         return;
@@ -190,10 +173,7 @@ void WebServerManager::handleSimulationData() {
 }
 
 void WebServerManager::handleSetPanel() {
-    Serial.println("[DEBUG] handleSetPanel() - Start");
-    
     if (!server.hasArg("panel") || !server.hasArg("state")) {
-        Serial.println("[DEBUG] handleSetPanel() - Missing parameters");
         server.sendHeader("Connection", "close");
         server.send(400, "application/json", "{\"error\":\"Missing parameters\"}");
         return;
@@ -201,10 +181,6 @@ void WebServerManager::handleSetPanel() {
     
     int panel = server.arg("panel").toInt();
     bool state = server.arg("state").toInt() == 1;
-    Serial.print("[DEBUG] handleSetPanel() - Panel ");
-    Serial.print(panel);
-    Serial.print(", State: ");
-    Serial.println(state ? "ON" : "OFF");
     
     simulation->setPanelState(panel, state);
     
@@ -251,22 +227,10 @@ void WebServerManager::handleSetLoad() {
 }
 
 void WebServerManager::handleRealData() {
-    Serial.println("[DEBUG] handleRealData() - Start");
-    
-    // Echte INA219-Daten abrufen
     float busV = ina->getBusVoltage();
     float currentMA = ina->getCurrent();
     float powerMW = ina->getPower();
     
-    Serial.print("[DEBUG] handleRealData() - Reading: V=");
-    Serial.print(busV);
-    Serial.print("V, I=");
-    Serial.print(currentMA);
-    Serial.print("mA, P=");
-    Serial.print(powerMW);
-    Serial.println("mW");
-    
-    // JSON-Response erstellen
     String json = "{";
     json += "\"voltage\":" + String(busV, 2) + ",";
     json += "\"current\":" + String(currentMA, 2) + ",";
@@ -276,7 +240,6 @@ void WebServerManager::handleRealData() {
     server.sendHeader("Connection", "close");
     server.sendHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     server.send(200, "application/json", json);
-    Serial.println("[DEBUG] handleRealData() - Data sent to client");
 }
 
 void WebServerManager::handleAutoToggleLoads() {

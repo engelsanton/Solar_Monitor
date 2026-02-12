@@ -8,7 +8,6 @@ class WiFiManager {
 public:
     WiFiManager(const char* ssid, const char* password);
     void begin();
-    bool isConnected();
     IPAddress getIP();
 
 private:

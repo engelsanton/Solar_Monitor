@@ -10,7 +10,6 @@ public:
     bool begin();
     bool isFound();
     float getBusVoltage();
-    float getShuntVoltage();
     float getCurrent();
     float getPower();
 

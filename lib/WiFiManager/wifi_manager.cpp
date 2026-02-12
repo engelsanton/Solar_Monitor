@@ -19,10 +19,6 @@ void WiFiManager::begin() {
     Serial.println(IP);
 }
 
-bool WiFiManager::isConnected() {
-    return WiFi.softAPgetStationNum() > 0;
-}
-
 IPAddress WiFiManager::getIP() {
     return WiFi.softAPIP();
 }
