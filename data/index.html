@@ -77,6 +77,44 @@
             fill: white;
         }
 
+        .header-buttons {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .report-btn {
+            min-width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+            background-color: #ff9800;  /* Orange */
+        }
+
+        .report-btn.visible {
+            display: flex;
+        }
+
+        .report-btn:active {
+            transform: scale(0.95);
+        }
+
+        .report-btn:hover {
+            background-color: #fb8c00;
+        }
+
+        .report-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: white;
+        }
+
         /* Main Content */
         #content {
             flex: 1;
@@ -230,6 +268,37 @@
             width: 100%;
             height: auto;
             min-height: 280px;
+        }
+
+        /* Dashboard */
+        .dashboard {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin-top: 12px;
+            padding: 12px;
+            background-color: #252525;
+            border-radius: 8px;
+            gap: 10px;
+        }
+
+        .dashboard-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .dashboard-label {
+            font-size: 0.75rem;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-value {
+            font-size: 1.1rem;
+            font-weight: bold;
         }
 
         /* Settings */
@@ -711,13 +780,20 @@
 <body>
     <!-- Header -->
     <div id="header">
-        <div class="header-time" id="headerTime">12 pm</div>
+        <div class="header-time" id="headerTime">6 am</div>
         <h1>Solar Monitor</h1>
-        <button class="play-stop-btn playing" id="playStopBtn">
-            <svg viewBox="0 0 24 24">
-                <path d="M8 5v14l11-7z"/>
-            </svg>
-        </button>
+        <div class="header-buttons">
+            <button class="report-btn" id="reportBtn" title="Show Report">
+                <svg viewBox="0 0 24 24">
+                    <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/>
+                </svg>
+            </button>
+            <button class="play-stop-btn playing" id="playStopBtn">
+                <svg viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z"/>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <!-- Main Content -->
@@ -755,16 +831,30 @@
                 <div class="chart-container">
                     <svg id="modulesChart" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet"></svg>
                 </div>
+                <div class="dashboard">
+                    <div class="dashboard-item">
+                        <span class="dashboard-label">Voltage</span>
+                        <span class="dashboard-value" id="dashboard-voltage" style="color: #4caf50;">0.0 V</span>
+                    </div>
+                    <div class="dashboard-item">
+                        <span class="dashboard-label">Current</span>
+                        <span class="dashboard-value" id="dashboard-current" style="color: #03a9f4;">0.0 A</span>
+                    </div>
+                    <div class="dashboard-item">
+                        <span class="dashboard-label">Power</span>
+                        <span class="dashboard-value" id="dashboard-power" style="color: #ff9800;">0.0 kW</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Battery Page -->
         <div id="batteryPage" class="page">
             <div class="card">
-                <div class="card-title">Battery Cells <span id="batterySocDisplay" style="color: #2196f3; font-size: 0.9rem;"></span></div>
+                <div class="card-title">Battery Cells</div>
                 <div class="button-group">
                     <div class="button-wrapper">
-                        <button class="toggle-btn battery-btn active" data-cell="1">
+                        <button class="toggle-btn battery-btn" data-cell="1">
                             <span>Cell 1</span>
                             <span class="button-spec">5 kWh</span>
                         </button>
@@ -791,13 +881,19 @@
                 <div class="chart-container">
                     <svg id="batteryChart" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet"></svg>
                 </div>
+                <div class="dashboard">
+                    <div class="dashboard-item">
+                        <span class="dashboard-label">State of Charge</span>
+                        <span class="dashboard-value" id="dashboard-soc" style="color: #2196f3;">0 %</span>
+                    </div>
+                </div>
             </div>
         </div>
 
         <!-- Load Page -->
         <div id="loadPage" class="page">
             <div class="card">
-                <div class="card-title">Load Controls <span id="loadDisplay" style="color: #f44336; font-size: 0.9rem;"></span></div>
+                <div class="card-title">Load Controls</div>
                 <div class="button-group">
                     <div class="button-wrapper">
                         <button class="load-btn toggle-btn" data-load="light">
@@ -826,7 +922,7 @@
                     <div class="button-wrapper">
                         <button class="load-btn toggle-btn" data-load="dishwasher">
                             <span>Dishwasher</span>
-                            <span class="button-spec">2000 W</span>
+                            <span class="button-spec">1000 W</span>
                         </button>
                     </div>
                     <div class="button-wrapper">
@@ -839,10 +935,10 @@
                 <div class="chart-container">
                     <svg id="loadChart" viewBox="0 0 600 300" preserveAspectRatio="xMidYMid meet"></svg>
                 </div>
-                <div class="card" style="margin-top: 20px;">
-                    <div class="card-title">Load Activity Log</div>
-                    <div id="loadLog" style="font-family: monospace; font-size: 0.85rem; color: #999; max-height: 200px; overflow-y: auto; line-height: 1.6;">
-                        <div style="color: #666; font-style: italic;">Start simulation to see load activity...</div>
+                <div class="dashboard">
+                    <div class="dashboard-item">
+                        <span class="dashboard-label">Current Load</span>
+                        <span class="dashboard-value" id="dashboard-load" style="color: #f44336;">0 W</span>
                     </div>
                 </div>
             </div>
@@ -862,7 +958,7 @@
                 <div class="settings-row">
                     <span class="settings-label">Auto toggle loads</span>
                     <label class="switch">
-                        <input type="checkbox" id="autoToggleLoads">
+                        <input type="checkbox" id="autoToggleLoads" checked>
                         <span class="slider"></span>
                     </label>
                 </div>
@@ -895,12 +991,12 @@
             currentPage: 'modules',
             isPlaying: false,
             simulationRunning: false,
+            simulationCompleted: false,  // Track if simulation has completed
             simulationDuration: 48,
             pollingInterval: null,
             activePanels: 1,  // Track active panels
-            autoToggleLoads: false,  // Track auto toggle loads setting
-            previousLoadStates: null,  // Track previous load states for logging
-            loadLogInitialized: false,  // Track if initial log was written
+            autoToggleLoads: true,  // Track auto toggle loads setting (default: on)
+            previousLoadStates: null,  // Track previous load states for manual button clicks
             lastSimulationData: null,  // Track last simulation data for timestamps
             chartData: {
                 modules: {voltage: [], current: []},
@@ -956,7 +1052,14 @@
             fetch('/simulation/cell', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'cell=1&state=1'
+                body: 'cell=1&state=0'
+            });
+            
+            // Initialize auto toggle loads (default: on)
+            fetch('/simulation/autotoggle', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'enable=1'
             });
             
             // Update charts on window resize
@@ -984,6 +1087,11 @@
                     // Start simulation
                     startSimulation();
                 }
+            });
+
+            // Report Button
+            document.getElementById('reportBtn').addEventListener('click', function() {
+                showOverviewModal();
             });
 
             // Navigation
@@ -1044,36 +1152,8 @@
                     const newState = !this.classList.contains('active');
                     this.classList.toggle('active');
                     
-                    // Log manual load change only if simulation is running
-                    if (state.simulationRunning && state.lastSimulationData) {
-                        const loadName = loadType.charAt(0).toUpperCase() + loadType.slice(1);
-                        const status = newState ? 'ON' : 'OFF';
-                        const color = newState ? '#4caf50' : '#f44336';
-                        const logElement = document.getElementById('loadLog');
-                        
-                        const hour = state.lastSimulationData.hour || 0;
-                        const minute = state.lastSimulationData.minute || 0;
-                        let h = hour % 12;
-                        if (h === 0) h = 12;
-                        const ampm = hour < 12 ? 'am' : 'pm';
-                        const m = minute.toString().padStart(2, '0');
-                        const timeStr = `${h}:${m} ${ampm}`;
-                        
-                        const logEntry = `<div style="color: ${color}; margin-bottom: 3px;">
-                            <strong>${timeStr}</strong> - ${loadName} ${status}
-                        </div>`;
-                        
-                        // Initialize log if empty
-                        if (logElement.innerHTML.includes('Start simulation')) {
-                            logElement.innerHTML = logEntry;
-                        } else {
-                            logElement.innerHTML += logEntry;
-                        }
-                        
-                        // Auto-scroll to bottom
-                        logElement.scrollTop = logElement.scrollHeight;
-                        
-                        // Update state tracking
+                    // Update state tracking for manual clicks
+                    if (state.simulationRunning) {
                         if (!state.previousLoadStates) {
                             state.previousLoadStates = {};
                         }
@@ -1170,6 +1250,10 @@
         }
 
         function startSimulation() {
+            // Hide report button when starting new simulation
+            state.simulationCompleted = false;
+            document.getElementById('reportBtn').classList.remove('visible');
+            
             // Check active panels and cells
             const activePanels = document.querySelectorAll('[data-panel].active').length;
             const activeCells = document.querySelectorAll('[data-cell].active').length;
@@ -1178,13 +1262,15 @@
             console.log('- Active Panels:', activePanels);
             console.log('- Active Cells:', activeCells);
             
-            // Optional: Show warning if no panels or cells active
-            if (activePanels === 0 && activeCells === 0) {
-                console.warn('Warning: No panels or cells active!');
-            } else if (activePanels === 0) {
-                console.warn('Warning: No panels active - no solar generation!');
-            } else if (activeCells === 0) {
-                console.warn('Warning: No cells active - no battery storage!');
+            // Validation: At least 1 panel must be active
+            if (activePanels === 0) {
+                alert('Error: At least 1 solar panel must be active!');
+                return;
+            }
+            
+            // Optional: Show warning if no cells active
+            if (activeCells === 0) {
+                console.warn('Warning: No battery cells active - no energy storage!');
             }
             
             // Update state
@@ -1199,16 +1285,22 @@
             // Clear all chart data before starting
             clearChartData();
             
-            // Reset load log
+            // Reset state tracking
             state.previousLoadStates = null;
-            state.loadLogInitialized = false;
-            const logElement = document.getElementById('loadLog');
-            logElement.innerHTML = '';
             
-            fetch('/simulation', {
+            // First, set auto toggle loads
+            fetch('/simulation/autotoggle', {
                 method: 'POST',
                 headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: `action=start&simulateSun=${simulateSun ? 1 : 0}&duration=${duration}`
+                body: `enable=${state.autoToggleLoads ? 1 : 0}`
+            })
+            .then(() => {
+                // Then start simulation
+                return fetch('/simulation', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: `action=start&simulateSun=${simulateSun ? 1 : 0}&duration=${duration}`
+                });
             })
             .then(response => response.json())
             .then(data => {
@@ -1235,6 +1327,22 @@
                 state.chartData.load.consumed[i] = null;
                 state.chartData.load.net[i] = null;
             }
+            // Reset dashboards
+            const dashboardVoltage = document.getElementById('dashboard-voltage');
+            if (dashboardVoltage) dashboardVoltage.textContent = '0.0 V';
+            
+            const dashboardCurrent = document.getElementById('dashboard-current');
+            if (dashboardCurrent) dashboardCurrent.textContent = '0.0 A';
+            
+            const dashboardPower = document.getElementById('dashboard-power');
+            if (dashboardPower) dashboardPower.textContent = '0.0 kW';
+            
+            const dashboardSoc = document.getElementById('dashboard-soc');
+            if (dashboardSoc) dashboardSoc.textContent = '0 %';
+            
+            const dashboardLoad = document.getElementById('dashboard-load');
+            if (dashboardLoad) dashboardLoad.textContent = '0 W';
+            
             // Redraw empty charts
             drawModulesChart();
             drawBatteryChart();
@@ -1255,7 +1363,11 @@
                     updatePlayStopButton();
                     enablePanelAndCellButtons();
                     stopDataPolling();
-                    console.log('Simulation stopped');
+                    
+                    // Don't show report button on manual stop
+                    // (only show on automatic completion)
+                    
+                    console.log('Simulation stopped manually');
                 }
             })
             .catch(err => console.error('Failed to stop simulation:', err));
@@ -1321,62 +1433,7 @@
             });
         }
         
-        function updateLoadLog(loads, hour, minute) {
-            const logElement = document.getElementById('loadLog');
-            
-            // Format time
-            let h = hour % 12;
-            if (h === 0) h = 12;
-            const ampm = hour < 12 ? 'am' : 'pm';
-            const m = minute.toString().padStart(2, '0');
-            const timeStr = `${h}:${m} ${ampm}`;
-            
-            // First call - log initial state
-            if (!state.loadLogInitialized) {
-                state.loadLogInitialized = true;
-                state.previousLoadStates = {...loads};
-                
-                const activeLoads = [];
-                Object.keys(loads).forEach(key => {
-                    if (loads[key]) {
-                        activeLoads.push(key.charAt(0).toUpperCase() + key.slice(1));
-                    }
-                });
-                
-                const initialLog = `<div style="color: #4caf50; margin-bottom: 5px;">
-                    <strong>${timeStr}</strong> - Initial state: ${activeLoads.length > 0 ? activeLoads.join(', ') + ' ON' : 'All loads OFF'}
-                </div>`;
-                logElement.innerHTML = initialLog;
-                return;
-            }
-            
-            // Check for changes
-            const changes = [];
-            Object.keys(loads).forEach(key => {
-                if (loads[key] !== state.previousLoadStates[key]) {
-                    const loadName = key.charAt(0).toUpperCase() + key.slice(1);
-                    const status = loads[key] ? 'ON' : 'OFF';
-                    const color = loads[key] ? '#4caf50' : '#f44336';
-                    changes.push({name: loadName, status, color});
-                }
-            });
-            
-            // Log changes
-            if (changes.length > 0) {
-                changes.forEach(change => {
-                    const logEntry = `<div style="color: ${change.color}; margin-bottom: 3px;">
-                        <strong>${timeStr}</strong> - ${change.name} ${change.status}
-                    </div>`;
-                    logElement.innerHTML += logEntry;
-                });
-                
-                // Auto-scroll to bottom
-                logElement.scrollTop = logElement.scrollHeight;
-                
-                // Update previous state
-                state.previousLoadStates = {...loads};
-            }
-        }
+
 
         function startDataPolling() {
             if (state.pollingInterval) return; // Already polling
@@ -1406,22 +1463,21 @@
                 // Update load buttons if auto toggle is enabled
                 if (data.autoToggleLoads && data.loads) {
                     updateLoadButtonsFromData(data.loads);
-                    updateLoadLog(data.loads, data.hour, data.minute);
                 }
                 
                 // Auto-stop if simulation ended
                 if (!data.isRunning && state.simulationRunning) {
                     state.isPlaying = false;
                     state.simulationRunning = false;
+                    state.simulationCompleted = true;  // Mark simulation as completed
                     updatePlayStopButton();
                     enablePanelAndCellButtons();
                     stopDataPolling();
-                    console.log('Simulation completed automatically');
                     
-                    // Show overview modal after a short delay
-                    setTimeout(() => {
-                        showOverviewModal();
-                    }, 500);
+                    // Show report button (but don't open report automatically)
+                    document.getElementById('reportBtn').classList.add('visible');
+                    
+                    console.log('Simulation completed automatically');
                 }
             })
             .catch(err => console.error('Failed to fetch simulation data:', err));
@@ -1429,10 +1485,16 @@
 
         function updateChartsWithData(data) {
             // Calculate array index based on simulation time
+            // Simulation runs from 6am to 6am (next day)
             // 24 hours = 48 data points (one every 30 minutes)
-            // hour 0.0 = index 0, hour 0.5 = index 1, hour 1.0 = index 2, etc.
+            // 6:00 = index 0, 7:00 = index 2, 12:00 = index 12, 0:00 = index 36, 6:00 = index 48
             const simHour = data.hour + (data.minute / 60.0);
-            const index = Math.floor(simHour * 2); // 2 points per hour
+            
+            // Adjust for 6am start: shift the hour so 6am = 0, 7am = 1, etc.
+            let adjustedHour = simHour - 6.0;
+            if (adjustedHour < 0) adjustedHour += 24.0; // Wrap around midnight (0-5am becomes 18-23)
+            
+            const index = Math.floor(adjustedHour * 2); // 2 points per hour
             
             if (index >= 0 && index < 48) {
                 state.chartData.modules.voltage[index] = data.voltage || 0;
@@ -1443,15 +1505,31 @@
                 state.chartData.load.net[index] = data.powerNet || 0;
             }
             
-            // Update live displays
-            const socDisplay = document.getElementById('batterySocDisplay');
-            if (socDisplay) {
-                socDisplay.textContent = `(${(data.batteryLevel || 0).toFixed(1)}%)`;
+            // Update dashboards
+            const dashboardVoltage = document.getElementById('dashboard-voltage');
+            if (dashboardVoltage) {
+                dashboardVoltage.textContent = `${(data.voltage || 0).toFixed(1)} V`;
             }
             
-            const loadDisplay = document.getElementById('loadDisplay');
-            if (loadDisplay) {
-                loadDisplay.textContent = `(${(data.powerLoad || 0).toFixed(0)} W)`;
+            const dashboardCurrent = document.getElementById('dashboard-current');
+            if (dashboardCurrent) {
+                dashboardCurrent.textContent = `${(data.current || 0).toFixed(2)} A`;
+            }
+            
+            const dashboardPower = document.getElementById('dashboard-power');
+            if (dashboardPower) {
+                const powerKW = (data.powerGenerated || 0) / 1000.0;
+                dashboardPower.textContent = `${powerKW.toFixed(2)} kW`;
+            }
+            
+            const dashboardSoc = document.getElementById('dashboard-soc');
+            if (dashboardSoc) {
+                dashboardSoc.textContent = `${(data.batteryLevel || 0).toFixed(1)} %`;
+            }
+            
+            const dashboardLoad = document.getElementById('dashboard-load');
+            if (dashboardLoad) {
+                dashboardLoad.textContent = `${(data.powerLoad || 0).toFixed(0)} W`;
             }
             
             // Redraw charts
@@ -1544,12 +1622,13 @@
                 svgContent += `<text x="${c.width - c.padding.right + 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="start">${currentLabel}A</text>`;
             }
             
-            // X-axis (time labels - only 4 points)
+            // X-axis (time labels - 6am to 6am cycle)
             const timeLabels = [
-                {hour: 0, label: '12am'},
-                {hour: 8, label: '8am'},
-                {hour: 16, label: '4pm'},
-                {hour: 24, label: '12am'}
+                {hour: 0, label: '6am'},
+                {hour: 6, label: '12pm'},
+                {hour: 12, label: '6pm'},
+                {hour: 18, label: '12am'},
+                {hour: 24, label: '6am'}
             ];
             timeLabels.forEach(t => {
                 const x = c.padding.left + (t.hour / 24) * chartWidth;
@@ -1626,12 +1705,13 @@
                 svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${i * 10}%</text>`;
             }
             
-            // X-axis (time labels - only 4 points)
+            // X-axis (time labels - 6am to 6am cycle)
             const timeLabels = [
-                {hour: 0, label: '12am'},
-                {hour: 8, label: '8am'},
-                {hour: 16, label: '4pm'},
-                {hour: 24, label: '12am'}
+                {hour: 0, label: '6am'},
+                {hour: 6, label: '12pm'},
+                {hour: 12, label: '6pm'},
+                {hour: 18, label: '12am'},
+                {hour: 24, label: '6am'}
             ];
             timeLabels.forEach(t => {
                 const x = c.padding.left + (t.hour / 24) * chartWidth;
@@ -1700,12 +1780,13 @@
                 svgContent += `<text x="${c.padding.left - 10}" y="${y + 5}" fill="${c.colors.text}" font-size="11" text-anchor="end">${labelText}W</text>`;
             }
             
-            // X-axis (time labels - only 4 points)
+            // X-axis (time labels - 6am to 6am cycle)
             const timeLabels3 = [
-                {hour: 0, label: '12am'},
-                {hour: 8, label: '8am'},
-                {hour: 16, label: '4pm'},
-                {hour: 24, label: '12am'}
+                {hour: 0, label: '6am'},
+                {hour: 6, label: '12pm'},
+                {hour: 12, label: '6pm'},
+                {hour: 18, label: '12am'},
+                {hour: 24, label: '6am'}
             ];
             timeLabels3.forEach(t => {
                 const x = c.padding.left + (t.hour / 24) * chartWidth;
